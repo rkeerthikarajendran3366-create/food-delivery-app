@@ -26,7 +26,6 @@ The application is built with a responsive UI and follows a real-world food deli
 * Search restaurants by name
 * Filter restaurants by cuisine
 * Sort restaurants by:
-
   * ⭐ Rating
   * 💰 Cost
   * 🚴 Delivery time
@@ -105,18 +104,43 @@ The application is built with a responsive UI and follows a real-world food deli
 * React Router DOM
 * Context API
 * React Hot Toast
+* Axios
 * Local Storage
 
 ## Backend
 
 * Node.js
 * Express.js
-* MongoDB
+* MongoDB Atlas
 * Mongoose
 * JWT Authentication
 * REST API
 * bcryptjs
 * Multer
+
+---
+
+# 🌐 Deployment
+
+## Frontend Deployment
+
+Deployed using Netlify:
+
+```
+https://foodexpress-mern-app.netlify.app/
+```
+
+## Backend Deployment
+
+Deployed using Render:
+
+```
+https://foodexpress-backend-p9dv.onrender.com
+```
+
+## Database
+
+MongoDB Atlas is used as the production database.
 
 ---
 
@@ -199,7 +223,7 @@ cd food-delivery-app
 
 # 💻 Frontend Setup
 
-Navigate to client:
+Navigate to client folder:
 
 ```bash
 cd client
@@ -227,7 +251,7 @@ http://localhost:5173
 
 # 🔥 Backend Setup
 
-Navigate to backend:
+Navigate to backend folder:
 
 ```bash
 cd backend
@@ -244,7 +268,7 @@ Create `.env` file:
 ```
 PORT=5000
 
-MONGODB_URI=mongodb://127.0.0.1:27017/fooddelivery
+MONGODB_URI=your_mongodb_atlas_connection_string
 
 JWT_SECRET=your_secret_key
 ```
@@ -287,9 +311,9 @@ GET /api/restaurants/:id
 
 FoodExpress supports:
 
-✅ Desktop
-✅ Tablet
-✅ Mobile Devices
+✅ Desktop  
+✅ Tablet  
+✅ Mobile Devices  
 
 ---
 
@@ -318,6 +342,10 @@ Frontend Completed ✅
 
 Backend Completed ✅
 
-MongoDB Integration Completed ✅
+MongoDB Atlas Integration Completed ✅
+
+Render Deployment Completed ✅
+
+Netlify Deployment Completed ✅
 
 Full Stack MERN Application Completed 🚀
