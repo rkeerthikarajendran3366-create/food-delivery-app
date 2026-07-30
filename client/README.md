@@ -1,82 +1,96 @@
 # 🍔 FoodExpress - Food Delivery Application
 
-FoodExpress is a modern food delivery web application built using **React.js, Tailwind CSS, and JavaScript**.  
-Users can explore restaurants, view menus, add items to cart, manage wishlist, submit reviews, and complete the order flow.
+FoodExpress is a full-stack MERN food delivery application that provides a modern online food ordering experience.
 
-The project is designed with a responsive UI and a modern food delivery experience similar to real-world applications.
+Users can explore restaurants, search and filter food options, view menus, add items to cart, manage wishlist, submit reviews, place orders, and manage their profile.
+
+The application is built with a responsive UI and follows a real-world food delivery workflow with frontend and backend integration.
 
 ---
 
 # 🚀 Features
 
 ## 🏠 Home Page
-- Beautiful hero section with food background
-- Order Now and Explore Restaurants buttons
-- Food categories section
-- Popular restaurants showcase
-- Responsive design
+
+* Modern hero section with food background
+* Order Now and Explore Restaurants buttons
+* Popular restaurants showcase
+* Food category section
+* Responsive design for all devices
 
 ---
 
-## 🍽️ Restaurant Features
-- View all restaurants
-- Search restaurants
-- Filter by cuisine
-- Sort restaurants by:
-  - Rating ⭐
-  - Cost 💰
-  - Delivery time 🚴
-- Restaurant details page
-- Menu items display
+# 🍽️ Restaurant Features
+
+* View all restaurants
+* Search restaurants by name
+* Filter restaurants by cuisine
+* Sort restaurants by:
+
+  * ⭐ Rating
+  * 💰 Cost
+  * 🚴 Delivery time
+* Restaurant details page
+* Dynamic restaurant menu display
 
 ---
 
-## 🛒 Cart Features
-- Add menu items to cart
-- Remove cart items
-- Update cart quantity
-- Cart item count badge
-- Checkout flow
+# 🛒 Cart Features
+
+* Add food items to cart
+* Remove cart items
+* Increase/decrease quantity
+* Cart item count badge
+* Price calculation
+* Checkout flow
+* Order confirmation page
 
 ---
 
-## ❤️ Wishlist
-- Add restaurants to wishlist
-- Remove restaurants from wishlist
-- Wishlist persistence using Local Storage
+# ❤️ Wishlist Features
+
+* Add restaurants to wishlist
+* Remove restaurants from wishlist
+* Wishlist persistence using Local Storage
 
 ---
 
-## ⭐ Review System
-- Add restaurant reviews
-- Display customer reviews
-- Star rating system
-- Reviews saved using Local Storage
+# ⭐ Review System
+
+* Add restaurant reviews
+* Star rating system
+* Display customer reviews
+* Reviews stored using Local Storage
 
 ---
 
-## 📦 Order Management
-- Checkout page
-- Order success page
-- Order history page
-- View previous orders
+# 📦 Order Management
+
+* Checkout page
+* Order success page
+* Order history page
+* View previous orders
 
 ---
 
-## 👤 User Features
-- Login page UI
-- Profile page
-- User navigation
+# 👤 User Authentication
+
+* User registration
+* User login
+* JWT authentication
+* Protected routes
+* User profile page
 
 ---
 
-## 🌙 UI Features
-- Dark mode support
-- Responsive mobile navbar
-- Hamburger menu
-- Toast notifications
-- Modern animations
-- Custom Poppins font
+# 🌙 UI Features
+
+* Dark mode support
+* Responsive navigation bar
+* Mobile hamburger menu
+* Toast notifications
+* Smooth animations
+* Modern food delivery UI
 
 ---
 
@@ -84,117 +98,226 @@ The project is designed with a responsive UI and a modern food delivery experien
 
 ## Frontend
 
-- React JS
-- Vite
-- JavaScript
-- Tailwind CSS
-- React Router DOM
-- React Hot Toast
-- Context API
-- Local Storage
+* React.js
+* Vite
+* JavaScript
+* Tailwind CSS
+* React Router DOM
+* Context API
+* React Hot Toast
+* Local Storage
 
+## Backend
 
-## Backend (Coming Next)
-
-- Node.js
-- Express.js
-- MongoDB
-- Mongoose
-- JWT Authentication
-- REST API
-
+* Node.js
+* Express.js
+* MongoDB
+* Mongoose
+* JWT Authentication
+* REST API
+* bcryptjs
+* Multer
 
 ---
 
 # 📂 Project Structure
+
+```
 food-delivery-app
 
 │
-├── src
-│ │
-│ ├── components
-│ │ ├── Navbar.jsx
-│ │ ├── Footer.jsx
-│ │ ├── Hero.jsx
-│ │ ├── FoodCategories.jsx
-│ │ ├── PopularRestaurants.jsx
-│ │ └── Review components
-│ │
-│ ├── pages
-│ │ ├── Home.jsx
-│ │ ├── Restaurants.jsx
-│ │ ├── RestaurantDetails.jsx
-│ │ ├── Cart.jsx
-│ │ ├── Checkout.jsx
-│ │ ├── Wishlist.jsx
-│ │ ├── OrderHistory.jsx
-│ │ ├── Profile.jsx
-│ │ └── NotFound.jsx
-│ │
-│ ├── context
-│ │ ├── CartContext.jsx
-│ │ ├── WishlistContext.jsx
-│ │ └── ThemeContext.jsx
-│ │
-│ ├── data
-│ │ └── restaurants.js
-│ │
-│ ├── App.jsx
-│ └── main.jsx
+├── client
+│   │
+│   ├── src
+│   │   ├── components
+│   │   │   ├── Navbar.jsx
+│   │   │   ├── RestaurantCard.jsx
+│   │   │   ├── ReviewForm.jsx
+│   │   │   └── ProtectedRoute.jsx
+│   │   │
+│   │   ├── pages
+│   │   │   ├── Home.jsx
+│   │   │   ├── Restaurants.jsx
+│   │   │   ├── RestaurantDetails.jsx
+│   │   │   ├── Cart.jsx
+│   │   │   ├── Checkout.jsx
+│   │   │   ├── Login.jsx
+│   │   │   ├── Register.jsx
+│   │   │   └── Profile.jsx
+│   │   │
+│   │   ├── context
+│   │   │   ├── CartContext.jsx
+│   │   │   ├── WishlistContext.jsx
+│   │   │   └── ThemeContext.jsx
+│   │   │
+│   │   └── services
+│   │       └── api.js
+│   │
+│   └── package.json
 │
-└── package.json
-
+├── backend
+│   │
+│   ├── config
+│   │   └── db.js
+│   │
+│   ├── controllers
+│   │   ├── authController.js
+│   │   └── restaurantController.js
+│   │
+│   ├── models
+│   │   ├── User.js
+│   │   └── Restaurant.js
+│   │
+│   ├── routes
+│   │   ├── authRoutes.js
+│   │   └── restaurantRoutes.js
+│   │
+│   ├── server.js
+│   └── package.json
+│
+├── .gitignore
+└── README.md
+```
 
 ---
 
 # ⚙️ Installation
 
-Clone repository:
+## Clone Repository
 
 ```bash
-git clone your-github-repository-link
+git clone https://github.com/rkeerthikarajendran3366-create/food-delivery-app.git
+```
 
-Go inside project:
+## Go Inside Project
 
+```bash
 cd food-delivery-app
+```
+
+---
+
+# 💻 Frontend Setup
+
+Navigate to client:
+
+```bash
+cd client
+```
 
 Install dependencies:
 
+```bash
 npm install
+```
 
-Start development server:
+Start frontend:
 
+```bash
 npm run dev
+```
 
-Application runs on:
+Frontend runs on:
 
+```
 http://localhost:5173
-📱 Responsive Design
+```
+
+---
+
+# 🔥 Backend Setup
+
+Navigate to backend:
+
+```bash
+cd backend
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Create `.env` file:
+
+```
+PORT=5000
+
+MONGODB_URI=mongodb://127.0.0.1:27017/fooddelivery
+
+JWT_SECRET=your_secret_key
+```
+
+Start backend:
+
+```bash
+npm run dev
+```
+
+Backend runs on:
+
+```
+http://localhost:5000
+```
+
+---
+
+# 🔗 API Features
+
+## Authentication
+
+```
+POST /api/auth/register
+
+POST /api/auth/login
+```
+
+## Restaurants
+
+```
+GET /api/restaurants
+
+GET /api/restaurants/:id
+```
+
+---
+
+# 📱 Responsive Design
 
 FoodExpress supports:
 
 ✅ Desktop
 ✅ Tablet
-✅ Mobile devices
+✅ Mobile Devices
 
-🔮 Future Enhancements
-Backend integration
-MongoDB database
-User authentication
-Online payment gateway
-Live order tracking
-Restaurant owner dashboard
-Admin panel
-👩‍💻 Developer
+---
 
-Keerthika.R
+# 🔮 Future Enhancements
 
-FoodExpress - MERN Food Delivery Application
+* Online payment gateway
+* Live order tracking
+* Restaurant owner dashboard
+* Admin dashboard
+* Cloud image storage
+* Real-time order updates
 
-⭐ Project Status
+---
+
+# 👩‍💻 Developer
+
+**Keerthika R**
+
+FoodExpress - MERN Full Stack Food Delivery Application
+
+---
+
+# ⭐ Project Status
 
 Frontend Completed ✅
 
-Backend Development In Progress 🚀
+Backend Completed ✅
 
+MongoDB Integration Completed ✅
 
+Full Stack MERN Application Completed 🚀
