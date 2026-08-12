@@ -479,7 +479,12 @@ function Checkout() {
           email:
             customerDetails?.email || "",
 
-          contact: cleanPhone,
+          // Razorpay requires the phone number in
+          // "+{country code}{number}" format (e.g. "+919876543210").
+          // A plain 10-digit number is NOT recognized and Razorpay
+          // silently falls back to showing its own empty
+          // "Enter mobile number" screen.
+          contact: `+91${cleanPhone}`,
         },
 
         // ------------------------------------------------
