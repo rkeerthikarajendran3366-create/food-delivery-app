@@ -1,7 +1,6 @@
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
-
 import CheckoutForm from "../components/CheckoutForm";
 
 function Checkout() {
@@ -9,7 +8,10 @@ function Checkout() {
 
   const navigate = useNavigate();
 
-  // Calculate total amount
+  // =====================================================
+  // CALCULATE TOTAL AMOUNT
+  // =====================================================
+
   const totalAmount = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
@@ -113,10 +115,18 @@ function Checkout() {
     // ===================================================
 
     try {
+      // -------------------------------------------------
+      // Check cart
+      // -------------------------------------------------
+
       if (!cart.length) {
         toast.error("Your cart is empty");
         return;
       }
+
+      // -------------------------------------------------
+      // Check amount
+      // -------------------------------------------------
 
       if (totalAmount < 1) {
         toast.error("Invalid order amount");
@@ -124,7 +134,48 @@ function Checkout() {
       }
 
       // -------------------------------------------------
-      // Step 1: Create Razorpay order from backend
+      // Check Razorpay frontend key
+      // -------------------------------------------------
+
+      const razorpayKey =
+        import.meta.env.VITE_RAZORPAY_KEY_ID;
+
+      console.log(
+        "🔑 Razorpay Frontend Key:",
+        razorpayKey
+      );
+
+      if (!razorpayKey) {
+        console.error(
+          "❌ VITE_RAZORPAY_KEY_ID is undefined"
+        );
+
+        toast.error(
+          "Razorpay Key ID is missing"
+        );
+
+        return;
+      }
+
+      // -------------------------------------------------
+      // Check Razorpay script
+      // -------------------------------------------------
+
+      if (!window.Razorpay) {
+        console.error(
+          "❌ Razorpay script is not loaded"
+        );
+
+        toast.error(
+          "Razorpay checkout failed to load"
+        );
+
+        return;
+      }
+
+      // -------------------------------------------------
+      // Step 1:
+      // Create Razorpay order from backend
       // -------------------------------------------------
 
       const response = await fetch(
@@ -142,50 +193,118 @@ function Checkout() {
         }
       );
 
-      const data = await response.json();
+      // -------------------------------------------------
+      // Read backend response
+      // -------------------------------------------------
+
+      const responseText =
+        await response.text();
+
+      console.log(
+        "📡 Create Order Status:",
+        response.status
+      );
+
+      console.log(
+        "📡 Create Order Response:",
+        responseText
+      );
+
+      let data;
+
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error(
+          "❌ Backend did not return JSON:",
+          responseText
+        );
+
+        toast.error(
+          `Backend error (${response.status})`
+        );
+
+        return;
+      }
+
+      // -------------------------------------------------
+      // Check backend response
+      // -------------------------------------------------
 
       if (!response.ok || !data.success) {
+        console.error(
+          "❌ Create order failed:",
+          data
+        );
+
         toast.error(
           data.message ||
-          "Unable to create payment"
+            "Unable to create payment"
+        );
+
+        return;
+      }
+
+      // -------------------------------------------------
+      // Check order data
+      // -------------------------------------------------
+
+      if (!data.order || !data.order.id) {
+        console.error(
+          "❌ Invalid Razorpay order response:",
+          data
+        );
+
+        toast.error(
+          "Invalid payment order received"
         );
 
         return;
       }
 
       console.log(
-        "Razorpay Frontend Key:",
-        import.meta.env.VITE_RAZORPAY_KEY_ID
+        "✅ Razorpay Order:",
+        data.order
       );
 
       // -------------------------------------------------
-      // Step 2: Razorpay Checkout Options
+      // Step 2:
+      // Razorpay Checkout Options
       // -------------------------------------------------
 
       const options = {
-        key:
-          import.meta.env
-            .VITE_RAZORPAY_KEY_ID,
+        key: razorpayKey,
 
         amount: data.order.amount,
 
-        currency: data.order.currency,
+        currency:
+          data.order.currency || "INR",
 
         name: "FoodExpress",
 
-        description: "Food Order Payment",
+        description:
+          "Food Order Payment",
 
         order_id: data.order.id,
 
         // ------------------------------------------------
-        // Step 3: Payment successful
+        // Step 3:
+        // Payment successful
         // ------------------------------------------------
 
         handler: async function (
           paymentResponse
         ) {
+          console.log(
+            "✅ Razorpay Payment Response:",
+            paymentResponse
+          );
+
           try {
+            // --------------------------------------------
             // Verify payment with backend
+            // --------------------------------------------
+
             const verifyResponse =
               await fetch(
                 "https://foodexpress-backend-p9dv.onrender.com/api/payment/verify-payment",
@@ -210,17 +329,57 @@ function Checkout() {
                 }
               );
 
-            const verifyData =
-              await verifyResponse.json();
+            // --------------------------------------------
+            // Read verification response
+            // --------------------------------------------
 
+            const verifyText =
+              await verifyResponse.text();
+
+            console.log(
+              "📡 Verify Payment Status:",
+              verifyResponse.status
+            );
+
+            console.log(
+              "📡 Verify Payment Response:",
+              verifyText
+            );
+
+            let verifyData;
+
+            try {
+              verifyData =
+                JSON.parse(verifyText);
+            } catch (parseError) {
+              console.error(
+                "❌ Verification response is not JSON:",
+                verifyText
+              );
+
+              toast.error(
+                "Payment verification server error"
+              );
+
+              return;
+            }
+
+            // --------------------------------------------
             // Payment verification failed
+            // --------------------------------------------
+
             if (
               !verifyResponse.ok ||
               !verifyData.success
             ) {
+              console.error(
+                "❌ Payment verification failed:",
+                verifyData
+              );
+
               toast.error(
                 verifyData.message ||
-                "Payment verification failed"
+                  "Payment verification failed"
               );
 
               return;
@@ -231,17 +390,27 @@ function Checkout() {
             // Create food order
             // --------------------------------------------
 
+            console.log(
+              "✅ Payment verified successfully"
+            );
+
             handlePlaceOrder(
               customerDetails
             );
           } catch (error) {
             console.error(
-              "Payment verification error:",
+              "❌ PAYMENT VERIFICATION ERROR:",
               error
             );
 
+            console.error(
+              "❌ Verification Error Message:",
+              error?.message
+            );
+
             toast.error(
-              "Payment verification failed"
+              error?.message ||
+                "Payment verification failed"
             );
           }
         },
@@ -284,6 +453,10 @@ function Checkout() {
 
         modal: {
           ondismiss: function () {
+            console.log(
+              "ℹ️ Razorpay payment modal closed"
+            );
+
             toast.error(
               "Payment cancelled"
             );
@@ -291,51 +464,74 @@ function Checkout() {
         },
       };
 
-      // =================================================
-      // Check Razorpay Script
-      // =================================================
-
-      if (!window.Razorpay) {
-        toast.error(
-          "Razorpay checkout failed to load"
-        );
-
-        return;
-      }
-
+      // -------------------------------------------------
       // Create Razorpay instance
+      // -------------------------------------------------
+
+      console.log(
+        "🚀 Opening Razorpay Checkout..."
+      );
+
       const razorpay =
         new window.Razorpay(options);
 
-      // =================================================
-      // Payment Failed
-      // =================================================
+      // -------------------------------------------------
+      // Razorpay payment failed
+      // -------------------------------------------------
 
       razorpay.on(
         "payment.failed",
         function (response) {
           console.error(
-            "Payment failed:",
+            "❌ Payment failed:",
             response.error
+          );
+
+          console.error(
+            "❌ Payment Error Code:",
+            response.error?.code
+          );
+
+          console.error(
+            "❌ Payment Error Description:",
+            response.error?.description
           );
 
           toast.error(
             response.error?.description ||
-            "Payment failed"
+              "Payment failed"
           );
         }
       );
 
+      // -------------------------------------------------
       // Open Razorpay
+      // -------------------------------------------------
+
       razorpay.open();
     } catch (error) {
+      // =================================================
+      // MAIN PAYMENT ERROR
+      // =================================================
+
       console.error(
-        "Payment error:",
+        "❌ PAYMENT ERROR:",
         error
       );
 
+      console.error(
+        "❌ PAYMENT ERROR MESSAGE:",
+        error?.message
+      );
+
+      console.error(
+        "❌ PAYMENT ERROR STACK:",
+        error?.stack
+      );
+
       toast.error(
-        "Something went wrong with payment"
+        error?.message ||
+          "Something went wrong with payment"
       );
     }
   };
