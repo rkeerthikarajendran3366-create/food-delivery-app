@@ -18,6 +18,38 @@ function Checkout() {
   );
 
   // =====================================================
+  // CLEAN + VALIDATE PHONE NUMBER
+  // =====================================================
+  // Razorpay's contact-details screen needs a plain 10-digit
+  // Indian mobile number (no +91, spaces, or dashes).
+  // If we pass something invalid/empty in `prefill.contact`,
+  // Razorpay shows its own "Enter mobile number" screen and
+  // blocks Continue until a valid one is typed.
+
+  const getCleanPhone = (rawPhone) => {
+    if (!rawPhone) return "";
+
+    // Remove +91, spaces, dashes, brackets — keep digits only
+    const digitsOnly = rawPhone
+      .toString()
+      .replace(/\D/g, "");
+
+    // Strip leading "91" if user included the country code
+    const withoutCountryCode =
+      digitsOnly.length === 12 &&
+      digitsOnly.startsWith("91")
+        ? digitsOnly.slice(2)
+        : digitsOnly;
+
+    return withoutCountryCode;
+  };
+
+  const isValidIndianMobile = (phone) => {
+    // Indian mobile numbers: 10 digits, starts with 6-9
+    return /^[6-9]\d{9}$/.test(phone);
+  };
+
+  // =====================================================
   // CREATE FOOD ORDER
   // =====================================================
 
@@ -130,6 +162,24 @@ function Checkout() {
 
       if (totalAmount < 1) {
         toast.error("Invalid order amount");
+        return;
+      }
+
+      // -------------------------------------------------
+      // Check + clean customer phone number
+      // -------------------------------------------------
+      // Validate BEFORE opening Razorpay so the customer
+      // fixes it on our own form instead of getting stuck
+      // on Razorpay's contact-details screen.
+
+      const cleanPhone = getCleanPhone(
+        customerDetails?.phone
+      );
+
+      if (!isValidIndianMobile(cleanPhone)) {
+        toast.error(
+          "Please enter a valid 10-digit mobile number"
+        );
         return;
       }
 
@@ -418,6 +468,9 @@ function Checkout() {
         // ------------------------------------------------
         // Razorpay prefill
         // ------------------------------------------------
+        // Using the cleaned, validated phone number here is
+        // what stops Razorpay's own mobile-number screen
+        // from blocking the user with its default validation.
 
         prefill: {
           name:
@@ -426,8 +479,7 @@ function Checkout() {
           email:
             customerDetails?.email || "",
 
-          contact:
-            customerDetails?.phone || "",
+          contact: cleanPhone,
         },
 
         // ------------------------------------------------
