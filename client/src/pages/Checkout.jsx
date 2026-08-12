@@ -128,7 +128,7 @@ function Checkout() {
       // -------------------------------------------------
 
       const response = await fetch(
-        "http://localhost:5000/api/payment/create-order",
+        "https://foodexpress-backend-p9dv.onrender.com/api/payment/create-order",
         {
           method: "POST",
 
@@ -147,7 +147,7 @@ function Checkout() {
       if (!response.ok || !data.success) {
         toast.error(
           data.message ||
-            "Unable to create payment"
+          "Unable to create payment"
         );
 
         return;
@@ -188,7 +188,7 @@ function Checkout() {
             // Verify payment with backend
             const verifyResponse =
               await fetch(
-                "http://localhost:5000/api/payment/verify-payment",
+                "https://foodexpress-backend-p9dv.onrender.com/api/payment/verify-payment",
                 {
                   method: "POST",
 
@@ -220,7 +220,7 @@ function Checkout() {
             ) {
               toast.error(
                 verifyData.message ||
-                  "Payment verification failed"
+                "Payment verification failed"
               );
 
               return;
@@ -321,7 +321,7 @@ function Checkout() {
 
           toast.error(
             response.error?.description ||
-              "Payment failed"
+            "Payment failed"
           );
         }
       );
