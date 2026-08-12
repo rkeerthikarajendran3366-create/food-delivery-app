@@ -1,68 +1,44 @@
 import { Link } from "react-router-dom";
 import { useWishlist } from "../context/WishlistContext";
 
-
 function RestaurantCard(props) {
-
-
   const {
     addToWishlist,
     removeFromWishlist,
-    isWishlisted
+    isWishlisted,
   } = useWishlist();
 
-
-
-
+  // Create complete restaurant object
+  // including menu items
   const restaurant = {
-
     id: props.id,
     name: props.name,
     cuisine: props.cuisine,
     rating: props.rating,
     deliveryTime: props.deliveryTime,
     costForTwo: props.costForTwo,
-    image: props.image
-
+    image: props.image,
+    menu: props.menu || [],
   };
-
-
-
 
   const favourite = isWishlisted(props.id);
 
-
-
-
   const handleWishlist = () => {
-
-
     if (favourite) {
-
       removeFromWishlist(props.id);
-
     } else {
-
       addToWishlist(restaurant);
-
     }
-
-
   };
 
-
-
-
-
   return (
-
     <div
       className="
-       bg-gradient-to-br
-from-white
-to-orange-50
-dark:from-gray-800
-dark:to-gray-900
+        bg-gradient-to-br
+        from-white
+        to-orange-50
+        dark:from-gray-800
+        dark:to-gray-900
         rounded-xl
         shadow-lg
         overflow-hidden
@@ -70,35 +46,24 @@ dark:to-gray-900
         transition
       "
     >
-
-
       {/* Image Section */}
 
       <div className="relative">
-
-
         <img
-
           src={props.image}
-
           alt={props.name}
-
           className="
             w-full
             h-52
             object-cover
           "
-
         />
-
-
 
         {/* Wishlist Button */}
 
         <button
-
           onClick={handleWishlist}
-
+          type="button"
           className="
             absolute
             top-3
@@ -109,30 +74,17 @@ dark:to-gray-900
             p-2
             text-2xl
             shadow
+            hover:scale-110
+            transition
           "
-
         >
-
           {favourite ? "❤️" : "🤍"}
-
-
         </button>
-
-
-
       </div>
-
-
-
-
-
 
       {/* Content */}
 
       <div className="p-4">
-
-
-
         <h2
           className="
             text-xl
@@ -141,14 +93,8 @@ dark:to-gray-900
             dark:text-white
           "
         >
-
           {props.name}
-
         </h2>
-
-
-
-
 
         <p
           className="
@@ -157,15 +103,8 @@ dark:to-gray-900
             mt-1
           "
         >
-
           {props.cuisine}
-
         </p>
-
-
-
-
-
 
         <div
           className="
@@ -176,29 +115,10 @@ dark:to-gray-900
             dark:text-gray-200
           "
         >
+          <span>⭐ {props.rating}</span>
 
-
-          <span>
-
-            ⭐ {props.rating}
-
-          </span>
-
-
-
-          <span>
-
-            🚴 {props.deliveryTime}
-
-          </span>
-
-
+          <span>🚴 {props.deliveryTime}</span>
         </div>
-
-
-
-
-
 
         <p
           className="
@@ -207,21 +127,12 @@ dark:to-gray-900
             text-orange-600
           "
         >
-
           {props.costForTwo}
-
         </p>
 
-
-
-
-
-
         <Link to={`/restaurant/${props.id}`}>
-
-
           <button
-
+            type="button"
             className="
               w-full
               mt-4
@@ -232,30 +143,13 @@ dark:to-gray-900
               rounded-lg
               transition
             "
-
           >
-
             View Details
-
           </button>
-
-
         </Link>
-
-
-
-
-
       </div>
-
-
-
-
     </div>
-
   );
-
 }
-
 
 export default RestaurantCard;

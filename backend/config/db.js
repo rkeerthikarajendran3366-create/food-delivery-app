@@ -2,7 +2,11 @@ const mongoose = require("mongoose");
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    const mongoURI = process.env.MONGODB_URI;
+
+    console.log("MongoDB URI starts with:", mongoURI?.substring(0, 20));
+
+    await mongoose.connect(mongoURI);
 
     console.log("✅ MongoDB Connected");
   } catch (error) {

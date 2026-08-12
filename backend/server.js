@@ -2,15 +2,16 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 
-const connectDB = require("./config/db");
+dotenv.config();
 
+const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 
 console.log("✅ Loading restaurant routes...");
 const restaurantRoutes = require("./routes/restaurantRoutes");
 console.log("✅ Restaurant routes loaded successfully");
 
-dotenv.config();
+const paymentRoutes = require("./routes/paymentRoutes");
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.get("/api/test", (req, res) => {
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/restaurants", restaurantRoutes);
+app.use("/api/payment", paymentRoutes);
 
 // Server Port
 const PORT = process.env.PORT || 5000;

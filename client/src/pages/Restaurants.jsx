@@ -293,21 +293,14 @@ function Restaurants() {
             <RestaurantCard
 
               key={restaurant.id}
-
               id={restaurant.id}
-
               name={restaurant.name}
-
               cuisine={restaurant.cuisine}
-
               rating={restaurant.rating}
-
               deliveryTime={restaurant.deliveryTime}
-
               costForTwo={restaurant.costForTwo}
-
               image={restaurant.image}
-
+              menu={restaurant.menu}
             />
 
 
