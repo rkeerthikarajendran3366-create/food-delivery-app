@@ -9,78 +9,36 @@ import { CartContext } from "../context/CartContext";
 import ReviewForm from "../components/ReviewForm";
 import ReviewList from "../components/ReviewList";
 
-
 function RestaurantDetails() {
-
-
   const { id } = useParams();
-
 
   const { addToCart } = useContext(CartContext);
 
-
-
   const restaurant = restaurants.find(
-    (restaurant) =>
-      restaurant.id === Number(id)
+    (restaurant) => restaurant.id === Number(id)
   );
 
-
-
   const [reviews, setReviews] = useState(() => {
+    const savedReviews = localStorage.getItem("restaurantReviews");
 
-
-    const savedReviews =
-      localStorage.getItem("restaurantReviews");
-
-
-    return savedReviews
-      ? JSON.parse(savedReviews)
-      : [];
-
-
+    return savedReviews ? JSON.parse(savedReviews) : [];
   });
 
-
-
-
-
   const addReview = (newReview) => {
-
-
-    const updatedReviews = [
-      ...reviews,
-      newReview
-    ];
-
+    const updatedReviews = [...reviews, newReview];
 
     setReviews(updatedReviews);
-
 
     localStorage.setItem(
       "restaurantReviews",
       JSON.stringify(updatedReviews)
     );
 
-
-    toast.success(
-      "Review added successfully ⭐"
-    );
-
-
+    toast.success("Review added successfully ⭐");
   };
 
-
-
-
-
-
-
   if (!restaurant) {
-
-
     return (
-
       <div
         className="
           min-h-screen
@@ -92,7 +50,6 @@ function RestaurantDetails() {
           dark:bg-gray-900
         "
       >
-
         <h1
           className="
             text-3xl
@@ -103,8 +60,6 @@ function RestaurantDetails() {
         >
           Restaurant Not Found
         </h1>
-
-
 
         <Link
           to="/restaurants"
@@ -120,60 +75,22 @@ function RestaurantDetails() {
         >
           Back
         </Link>
-
-
       </div>
-
     );
-
   }
 
+  const restaurantReviews = reviews.filter(
+    (review) => review.restaurantId === restaurant.id
+  );
 
-
-
-
-  const restaurantReviews =
-    reviews.filter(
-      (review) =>
-        review.restaurantId === restaurant.id
-    );
-
-
-
-
-
-
-
-
+  // Add item to cart
   const handleAddCart = (item) => {
-
-
     addToCart(item);
 
-
-    toast.success(
-      `${item.name} added to cart 🛒`
-    );
-
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth"
-    });
-
-
+    toast.success(`${item.name} added to cart 🛒`);
   };
 
-
-
-
-
-
-
-
-
   return (
-
     <div
       className="
         max-w-6xl
@@ -185,12 +102,11 @@ function RestaurantDetails() {
         transition
       "
     >
-
-
+      {/* Back Button */}
 
       <Link to="/restaurants">
-
         <button
+          type="button"
           className="
             mb-6
             bg-orange-500
@@ -203,13 +119,9 @@ function RestaurantDetails() {
         >
           ← Back
         </button>
-
       </Link>
 
-
-
-
-
+      {/* Restaurant Image */}
 
       <img
         src={restaurant.image}
@@ -223,11 +135,7 @@ function RestaurantDetails() {
         "
       />
 
-
-
-
-
-
+      {/* Restaurant Name */}
 
       <h1
         className="
@@ -241,61 +149,59 @@ function RestaurantDetails() {
         {restaurant.name}
       </h1>
 
+      {/* Restaurant Details */}
 
-
-
-
-      <p className="
-        mt-3
-        text-gray-700
-        dark:text-gray-300
-      ">
+      <p
+        className="
+          mt-3
+          text-gray-700
+          dark:text-gray-300
+        "
+      >
         🍴 {restaurant.cuisine}
       </p>
 
-
-      <p className="
-        mt-2
-        text-gray-700
-        dark:text-gray-300
-      ">
+      <p
+        className="
+          mt-2
+          text-gray-700
+          dark:text-gray-300
+        "
+      >
         ⭐ {restaurant.rating}
       </p>
 
-
-      <p className="
-        mt-2
-        text-gray-700
-        dark:text-gray-300
-      ">
+      <p
+        className="
+          mt-2
+          text-gray-700
+          dark:text-gray-300
+        "
+      >
         📍 {restaurant.location}
       </p>
 
-
-      <p className="
-        mt-2
-        text-gray-700
-        dark:text-gray-300
-      ">
+      <p
+        className="
+          mt-2
+          text-gray-700
+          dark:text-gray-300
+        "
+      >
         🕒 {restaurant.deliveryTime}
       </p>
 
-
-      <p className="
-        mt-2
-        font-semibold
-        text-orange-600
-      ">
+      <p
+        className="
+          mt-2
+          font-semibold
+          text-orange-600
+        "
+      >
         💰 {restaurant.costForTwo}
       </p>
 
-
-
-
-
-
-
-
+      {/* Menu */}
 
       <h2
         className="
@@ -310,13 +216,6 @@ function RestaurantDetails() {
         Menu 🍽️
       </h2>
 
-
-
-
-
-
-
-
       <div
         className="
           grid
@@ -324,141 +223,93 @@ function RestaurantDetails() {
           gap-6
         "
       >
+        {restaurant.menu.map((item) => (
+          <div
+            key={item.id}
+            className="
+              bg-white
+              dark:bg-gray-800
+              rounded-xl
+              shadow-lg
+              overflow-hidden
+              hover:shadow-2xl
+              transition
+            "
+          >
+            {/* Food Image */}
 
-
-        {
-          restaurant.menu.map((item) => (
-
-
-
-            <div
-              key={item.id}
+            <img
+              src={item.image}
+              alt={item.name}
               className="
-                bg-white
-                dark:bg-gray-800
-                rounded-xl
-                shadow-lg
-                overflow-hidden
-                hover:shadow-2xl
-                transition
+                w-full
+                h-52
+                object-cover
               "
-            >
+            />
 
+            <div className="p-4">
+              {/* Food Name */}
 
-              <img
-                src={item.image}
-                alt={item.name}
+              <h3
                 className="
-                  w-full
-                  h-52
-                  object-cover
+                  text-xl
+                  font-bold
+                  text-gray-900
+                  dark:text-white
                 "
-              />
+              >
+                {item.name}
+              </h3>
 
+              {/* Food Price */}
 
+              <p
+                className="
+                  text-orange-600
+                  font-semibold
+                  mt-2
+                "
+              >
+                ₹{item.price}
+              </p>
 
+              {/* Add to Cart */}
 
-              <div className="p-4">
-
-
-                <h3
-                  className="
-                    text-xl
-                    font-bold
-                    text-gray-900
-                    dark:text-white
-                  "
-                >
-                  {item.name}
-                </h3>
-
-
-
-
-                <p
-                  className="
-                    text-orange-600
-                    font-semibold
-                    mt-2
-                  "
-                >
-                  ₹{item.price}
-                </p>
-
-
-
-
-
-                <button
-                  onClick={() =>
-                    handleAddCart(item)
-                  }
-                  className="
-                    mt-4
-                    w-full
-                    bg-green-500
-                    hover:bg-green-600
-                    text-white
-                    py-2
-                    rounded-lg
-                    font-semibold
-                  "
-                >
-                  Add to Cart 🛒
-                </button>
-
-
-
-              </div>
-
-
-
+              <button
+                type="button"
+                onClick={() => handleAddCart(item)}
+                className="
+                  mt-4
+                  w-full
+                  bg-green-500
+                  hover:bg-green-600
+                  text-white
+                  py-2
+                  rounded-lg
+                  font-semibold
+                  transition
+                "
+              >
+                Add to Cart 🛒
+              </button>
             </div>
-
-
-
-          ))
-        }
-
-
+          </div>
+        ))}
       </div>
-
-
-
-
-
-
-
-
 
       {/* Reviews */}
 
       <div className="mt-12">
-
-
-        <ReviewList
-          reviews={restaurantReviews}
-        />
-
-
+        <ReviewList reviews={restaurantReviews} />
 
         <ReviewForm
           restaurantId={restaurant.id}
           onAddReview={addReview}
         />
-
-
       </div>
-
-
-
-
-
     </div>
-
   );
-
 }
-
 
 export default RestaurantDetails;

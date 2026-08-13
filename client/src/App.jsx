@@ -4,6 +4,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 
 import Home from "./pages/Home";
 import Restaurants from "./pages/Restaurants";
@@ -20,8 +21,9 @@ import Profile from "./pages/Profile";
 import Wishlist from "./pages/Wishlist";
 import OrderHistory from "./pages/OrderHistory";
 
-import NotFound from "./pages/NotFound";
+import AdminDashboard from "./pages/AdminDashboard";
 
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -39,13 +41,11 @@ function App() {
           element={<Home />}
         />
 
-
         {/* Restaurants */}
         <Route
           path="/restaurants"
           element={<Restaurants />}
         />
-
 
         {/* Restaurant Details */}
         <Route
@@ -53,13 +53,11 @@ function App() {
           element={<RestaurantDetails />}
         />
 
-
         {/* Cart */}
         <Route
           path="/cart"
           element={<Cart />}
         />
-
 
         {/* Checkout */}
         <Route
@@ -67,13 +65,11 @@ function App() {
           element={<Checkout />}
         />
 
-
         {/* Order Success */}
         <Route
           path="/order-success"
           element={<OrderSuccess />}
         />
-
 
         {/* Login */}
         <Route
@@ -81,13 +77,11 @@ function App() {
           element={<Login />}
         />
 
-
         {/* Register */}
         <Route
           path="/register"
           element={<Register />}
         />
-
 
         {/* Protected Profile */}
         <Route
@@ -99,13 +93,11 @@ function App() {
           }
         />
 
-
         {/* Wishlist */}
         <Route
           path="/wishlist"
           element={<Wishlist />}
         />
-
 
         {/* Orders */}
         <Route
@@ -113,6 +105,15 @@ function App() {
           element={<OrderHistory />}
         />
 
+        {/* Admin Dashboard */}
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          }
+        />
 
         {/* 404 Page */}
         <Route
@@ -122,12 +123,10 @@ function App() {
 
       </Routes>
 
-
       <Footer />
 
     </BrowserRouter>
   );
 }
-
 
 export default App;
