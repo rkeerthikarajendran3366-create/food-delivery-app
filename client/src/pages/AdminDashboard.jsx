@@ -1,11 +1,11 @@
 import { useNavigate } from "react-router-dom";
 
 function AdminDashboard() {
+  console.log("🔥🔥🔥 ADMIN DASHBOARD IS RENDERING 🔥🔥🔥");
+
   const navigate = useNavigate();
 
-  const user = JSON.parse(
-    localStorage.getItem("user")
-  );
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -15,18 +15,10 @@ function AdminDashboard() {
   };
 
   return (
-    <div
-      className="
-        min-h-screen
-        bg-gray-100
-        dark:bg-gray-900
-        p-6
-      "
-    >
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6">
       <div className="max-w-6xl mx-auto">
 
         {/* Header */}
-
         <div
           className="
             flex
@@ -80,7 +72,6 @@ function AdminDashboard() {
         </div>
 
         {/* Dashboard Cards */}
-
         <div
           className="
             grid
@@ -89,21 +80,25 @@ function AdminDashboard() {
             gap-6
           "
         >
-
           {/* Users */}
-
-          <div
+          <button
+            type="button"
+            onClick={() => navigate("/admin/users")}
             className="
+              w-full
+              text-left
               bg-white
               dark:bg-gray-800
               p-6
               rounded-xl
               shadow-lg
+              hover:shadow-2xl
+              hover:-translate-y-1
+              transition
+              cursor-pointer
             "
           >
-            <div className="text-4xl">
-              👥
-            </div>
+            <div className="text-4xl">👥</div>
 
             <h2
               className="
@@ -124,24 +119,46 @@ function AdminDashboard() {
                 dark:text-gray-300
               "
             >
-              Manage registered users.
+              View and manage registered users.
             </p>
-          </div>
+
+            <div
+              className="
+                mt-4
+                inline-block
+                bg-orange-500
+                hover:bg-orange-600
+                text-white
+                px-4
+                py-2
+                rounded-lg
+                text-sm
+                font-semibold
+              "
+            >
+              View Users →
+            </div>
+          </button>
 
           {/* Restaurants */}
-
-          <div
+          <button
+            type="button"
+            onClick={() => navigate("/admin/restaurants")}
             className="
+              w-full
+              text-left
               bg-white
               dark:bg-gray-800
               p-6
               rounded-xl
               shadow-lg
+              hover:shadow-2xl
+              hover:-translate-y-1
+              transition
+              cursor-pointer
             "
           >
-            <div className="text-4xl">
-              🍔
-            </div>
+            <div className="text-4xl">🍔</div>
 
             <h2
               className="
@@ -164,22 +181,44 @@ function AdminDashboard() {
             >
               Manage restaurants and menu items.
             </p>
-          </div>
+
+            <div
+              className="
+                mt-4
+                inline-block
+                bg-orange-500
+                hover:bg-orange-600
+                text-white
+                px-4
+                py-2
+                rounded-lg
+                text-sm
+                font-semibold
+              "
+            >
+              View Restaurants →
+            </div>
+          </button>
 
           {/* Orders */}
-
-          <div
+          <button
+            type="button"
+            onClick={() => navigate("/admin/orders")}
             className="
+              w-full
+              text-left
               bg-white
               dark:bg-gray-800
               p-6
               rounded-xl
               shadow-lg
+              hover:shadow-2xl
+              hover:-translate-y-1
+              transition
+              cursor-pointer
             "
           >
-            <div className="text-4xl">
-              📦
-            </div>
+            <div className="text-4xl">📦</div>
 
             <h2
               className="
@@ -202,12 +241,27 @@ function AdminDashboard() {
             >
               View and manage customer orders.
             </p>
-          </div>
 
+            <div
+              className="
+                mt-4
+                inline-block
+                bg-orange-500
+                hover:bg-orange-600
+                text-white
+                px-4
+                py-2
+                rounded-lg
+                text-sm
+                font-semibold
+              "
+            >
+              View Orders →
+            </div>
+          </button>
         </div>
 
         {/* Admin Information */}
-
         <div
           className="
             mt-8
@@ -255,7 +309,6 @@ function AdminDashboard() {
         </div>
 
         {/* Back to Home */}
-
         <button
           type="button"
           onClick={() => navigate("/")}

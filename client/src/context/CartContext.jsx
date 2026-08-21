@@ -2,374 +2,182 @@ import {
   createContext,
   useContext,
   useEffect,
-  useState
+  useState,
 } from "react";
-
-import toast from "react-hot-toast";
-
 
 export const CartContext = createContext();
 
-
-
 export const useCart = () => {
-
   return useContext(CartContext);
-
 };
 
-
-
-
 function CartProvider({ children }) {
-
-
-  // Load cart from Local Storage
   const [cart, setCart] = useState(() => {
+    const savedCart =
+      localStorage.getItem("cart");
 
-    const savedCart = localStorage.getItem("cart");
+    try {
+      return savedCart
+        ? JSON.parse(savedCart)
+        : [];
+    } catch (error) {
+      console.error(
+        "Error loading cart:",
+        error
+      );
 
-    return savedCart
-      ? JSON.parse(savedCart)
-      : [];
-
+      return [];
+    }
   });
 
-
-
-
-  // Save cart whenever cart changes
   useEffect(() => {
-
-
     localStorage.setItem(
       "cart",
       JSON.stringify(cart)
     );
-
-
   }, [cart]);
 
+  // ==============================
+  // ADD TO CART
+  // ==============================
 
-
-
-
-
-
-  // Add item to cart
   const addToCart = (item) => {
+    setCart((currentCart) => {
+      const existingItem =
+        currentCart.find(
+          (cartItem) =>
+            String(cartItem.id) ===
+            String(item.id)
+        );
 
+      if (existingItem) {
+        return currentCart.map(
+          (cartItem) =>
+            String(cartItem.id) ===
+            String(item.id)
+              ? {
+                  ...cartItem,
+                  quantity:
+                    (cartItem.quantity || 1) +
+                    1,
+                }
+              : cartItem
+        );
+      }
 
-    const existingItem = cart.find(
-      (cartItem) => cartItem.id === item.id
-    );
-
-
-
-    if (existingItem) {
-
-
-      setCart(
-
-        cart.map((cartItem) =>
-
-          cartItem.id === item.id
-
-            ? {
-
-              ...cartItem,
-
-              quantity:
-                cartItem.quantity + 1
-
-            }
-
-            :
-
-            cartItem
-
-        )
-
-      );
-
-
-    } else {
-
-
-      setCart([
-
-        ...cart,
-
+      return [
+        ...currentCart,
         {
-
           ...item,
-
-          quantity: 1
-
-        }
-
-      ]);
-
-
-    }
-
-
-
-
+          quantity: 1,
+        },
+      ];
+    });
   };
 
+  // ==============================
+  // INCREASE
+  // ==============================
 
-
-
-
-
-
-
-
-  // Increase quantity
   const increaseQuantity = (id) => {
-
-
-    setCart(
-
-      cart.map((item) =>
-
-        item.id === id
-
-          ?
-
-          {
-
-            ...item,
-
-            quantity:
-              item.quantity + 1
-
-          }
-
-          :
-
-          item
-
-      )
-
-    );
-
-
-  };
-
-
-
-
-
-
-
-
-
-  // Decrease quantity
-  const decreaseQuantity = (id) => {
-
-
-    setCart(
-
-      cart
-
-        .map((item) =>
-
-
-          item.id === id
-
-            ?
-
-            {
-
+    setCart((currentCart) =>
+      currentCart.map((item) =>
+        String(item.id) === String(id)
+          ? {
               ...item,
-
               quantity:
-                item.quantity - 1
-
+                (item.quantity || 1) + 1,
             }
-
-            :
-
-            item
-
-
-        )
-
-
-        .filter(
-          (item) => item.quantity > 0
-        )
-
-
-    );
-
-
-  };
-
-
-
-
-
-
-
-
-
-  // Remove item
-  const removeItem = (id) => {
-
-
-    const removedItem = cart.find(
-      (item) => item.id === id
-    );
-
-
-
-    setCart(
-
-      cart.filter(
-        (item) =>
-          item.id !== id
+          : item
       )
-
     );
-
-
-
-    if (removedItem) {
-
-      toast.error(
-        `${removedItem.name} removed ❌`
-      );
-
-    }
-
-
   };
 
+  // ==============================
+  // DECREASE
+  // ==============================
 
+  const decreaseQuantity = (id) => {
+    setCart((currentCart) =>
+      currentCart
+        .map((item) =>
+          String(item.id) === String(id)
+            ? {
+                ...item,
+                quantity:
+                  (item.quantity || 1) - 1,
+              }
+            : item
+        )
+        .filter(
+          (item) =>
+            (item.quantity || 0) > 0
+        )
+    );
+  };
 
+  // ==============================
+  // REMOVE
+  // ==============================
 
+  const removeItem = (id) => {
+    setCart((currentCart) =>
+      currentCart.filter(
+        (item) =>
+          String(item.id) !== String(id)
+      )
+    );
+  };
 
+  // ==============================
+  // CLEAR CART
+  // ==============================
 
-
-
-
-  // Clear cart after order
   const clearCart = () => {
-
-
     setCart([]);
 
-
-    localStorage.removeItem(
-      "cart"
-    );
-
-
-    toast.success(
-      "Order completed 🎉"
-    );
-
-
+    localStorage.removeItem("cart");
   };
 
+  // ==============================
+  // CART COUNT
+  // ==============================
 
-
-
-
-
-
-
-
-  // Cart item count for Navbar
   const cartCount = cart.reduce(
-
     (total, item) =>
-
-      total + item.quantity,
-
+      total + (item.quantity || 1),
     0
-
   );
 
+  // ==============================
+  // CART TOTAL
+  // ==============================
 
-
-
-
-
-
-
-
-  // Cart total price
   const cartTotal = cart.reduce(
-
     (total, item) =>
-
       total +
-      item.price *
-      item.quantity,
-
+      Number(item.price || 0) *
+        (item.quantity || 1),
     0
-
   );
-
-
-
-
-
-
-
 
   return (
-
     <CartContext.Provider
-
-
       value={{
-
         cart,
-
         setCart,
-
-
         addToCart,
-
-
         increaseQuantity,
-
-
         decreaseQuantity,
-
-
         removeItem,
-
-
         clearCart,
-
-
         cartCount,
-
-
-        cartTotal
-
-
+        cartTotal,
       }}
-
-
     >
-
       {children}
-
     </CartContext.Provider>
-
-
   );
-
-
 }
-
-
 
 export default CartProvider;

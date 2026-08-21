@@ -14,29 +14,119 @@ export const useWishlist = () => {
 };
 
 function WishlistProvider({ children }) {
-  const [wishlist, setWishlist] = useState(() => {
+  // Get logged-in user
+  const getLoggedInUser = () => {
     try {
-      const savedWishlist = localStorage.getItem("wishlist");
+      const user = localStorage.getItem("user");
+
+      return user ? JSON.parse(user) : null;
+    } catch (error) {
+      console.error("User loading error:", error);
+      return null;
+    }
+  };
+
+  // Get current user's email
+  const getUserEmail = () => {
+    const user = getLoggedInUser();
+
+    return user?.email?.toLowerCase() || null;
+  };
+
+  // Get user-specific wishlist key
+  const getWishlistKey = () => {
+    const email = getUserEmail();
+
+    if (!email) {
+      return null;
+    }
+
+    return `wishlist_${email}`;
+  };
+
+  // Load wishlist for current user
+  const loadWishlist = () => {
+    try {
+      const key = getWishlistKey();
+
+      // Guest user
+      if (!key) {
+        return [];
+      }
+
+      const savedWishlist = localStorage.getItem(key);
 
       return savedWishlist
         ? JSON.parse(savedWishlist)
         : [];
     } catch (error) {
       console.error("Wishlist loading error:", error);
+
       return [];
     }
-  });
+  };
 
-  // Save wishlist to Local Storage
+  const [wishlist, setWishlist] = useState(loadWishlist);
+
+  // Reload wishlist when login/logout happens
   useEffect(() => {
+    const handleUserChange = () => {
+      setWishlist(loadWishlist());
+    };
+
+    // Custom event for same-tab login/logout
+    window.addEventListener(
+      "userChanged",
+      handleUserChange
+    );
+
+    // Storage event for changes from another tab
+    window.addEventListener(
+      "storage",
+      handleUserChange
+    );
+
+    return () => {
+      window.removeEventListener(
+        "userChanged",
+        handleUserChange
+      );
+
+      window.removeEventListener(
+        "storage",
+        handleUserChange
+      );
+    };
+  }, []);
+
+  // Save wishlist for current logged-in user
+  useEffect(() => {
+    const key = getWishlistKey();
+
+    // Don't save anything for guest users
+    if (!key) {
+      return;
+    }
+
     localStorage.setItem(
-      "wishlist",
+      key,
       JSON.stringify(wishlist)
     );
   }, [wishlist]);
 
   // Add restaurant to wishlist
   const addToWishlist = (restaurant) => {
+    const email = getUserEmail();
+
+    // Guest user
+    if (!email) {
+      toast.error(
+        "Please login to use wishlist 🔐"
+      );
+
+      return;
+    }
+
     if (!restaurant || !restaurant.id) {
       toast.error("Invalid restaurant");
       return;
@@ -63,6 +153,16 @@ function WishlistProvider({ children }) {
 
   // Remove restaurant from wishlist
   const removeFromWishlist = (id) => {
+    const email = getUserEmail();
+
+    if (!email) {
+      toast.error(
+        "Please login to use wishlist 🔐"
+      );
+
+      return;
+    }
+
     const restaurant = wishlist.find(
       (item) => item.id === id
     );
@@ -74,12 +174,20 @@ function WishlistProvider({ children }) {
     );
 
     toast.success(
-      `${restaurant?.name || "Restaurant"} removed from wishlist`
+      `${
+        restaurant?.name || "Restaurant"
+      } removed from wishlist`
     );
   };
 
-  // Check wishlist status
+  // Check whether restaurant is wishlisted
   const isWishlisted = (id) => {
+    const email = getUserEmail();
+
+    if (!email) {
+      return false;
+    }
+
     return wishlist.some(
       (item) => item.id === id
     );

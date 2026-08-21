@@ -12,6 +12,7 @@ const restaurantRoutes = require("./routes/restaurantRoutes");
 console.log("✅ Restaurant routes loaded successfully");
 
 const paymentRoutes = require("./routes/paymentRoutes");
+const orderRoutes = require("./routes/orderRoutes");
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.get("/api/test", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/restaurants", restaurantRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/orders", orderRoutes);
 
 // Server Port
 const PORT = process.env.PORT || 5000;

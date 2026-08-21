@@ -7,7 +7,6 @@ function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
@@ -23,35 +22,51 @@ function Login() {
 
       console.log("Login Response:", response.data);
 
-      // Save JWT token
-      localStorage.setItem(
-        "token",
-        response.data.token
-      );
+      const { token, user } = response.data;
 
-      // Save user details
+      // Check login response
+      if (!token || !user) {
+        alert("Invalid login response from server");
+        return;
+      }
+
+      console.log("Logged-in User:", user);
+      console.log("User Role:", user.role);
+
+      // Clear old login data
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+
+      // Save JWT token
+      localStorage.setItem("token", token);
+
+      // Save user details including role
       localStorage.setItem(
         "user",
-        JSON.stringify(response.data.user)
+        JSON.stringify({
+          ...user,
+          role: user.role,
+        })
       );
+      window.dispatchEvent(new Event("userChanged"));
 
       alert("Login successful");
 
       // Redirect based on user role
-      if (response.data.user?.role === "admin") {
-        navigate("/admin");
+      if (user.role === "admin") {
+        console.log("Admin detected → Redirecting to /admin");
+        navigate("/admin", { replace: true });
       } else {
-        navigate("/profile");
+        console.log("Customer detected → Redirecting to /profile");
+        navigate("/profile", { replace: true });
       }
-
     } catch (error) {
       console.log("Login Error:", error);
 
       alert(
         error.response?.data?.message ||
-        "Login failed"
+        "Login failed. Please check your email and password."
       );
-
     } finally {
       setLoading(false);
     }
@@ -80,7 +95,7 @@ function Login() {
           rounded-lg
         "
       >
-
+        {/* Heading */}
         <h1
           className="
             text-4xl
@@ -95,9 +110,7 @@ function Login() {
         </h1>
 
         <form onSubmit={handleLogin}>
-
           {/* Email */}
-
           <input
             type="email"
             placeholder="Email"
@@ -116,7 +129,6 @@ function Login() {
           />
 
           {/* Password */}
-
           <input
             type="password"
             placeholder="Password"
@@ -135,9 +147,9 @@ function Login() {
           />
 
           {/* Login Button */}
-
           <button
             type="submit"
+            disabled={loading}
             className="
               w-full
               bg-black
@@ -146,16 +158,13 @@ function Login() {
               p-3
               rounded
               transition
+              disabled:opacity-50
+              disabled:cursor-not-allowed
             "
-            disabled={loading}
           >
-            {loading
-              ? "Logging in..."
-              : "Login"}
+            {loading ? "Logging in..." : "Login"}
           </button>
-
         </form>
-
       </div>
     </div>
   );

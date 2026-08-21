@@ -3,8 +3,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
+
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
+import CustomerRoute from "./components/CustomerRoute";
 
 import Home from "./pages/Home";
 import Restaurants from "./pages/Restaurants";
@@ -22,68 +24,95 @@ import Wishlist from "./pages/Wishlist";
 import OrderHistory from "./pages/OrderHistory";
 
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminUsers from "./pages/AdminUsers";
+import AdminRestaurants from "./pages/AdminRestaurants";
+import AdminOrders from "./pages/AdminOrders";
 
 import NotFound from "./pages/NotFound";
 
 function App() {
   return (
     <BrowserRouter>
-
       <ScrollToTop />
 
       <Navbar />
 
       <Routes>
 
-        {/* Home */}
+        {/* =========================
+            PUBLIC ROUTES
+        ========================== */}
+
         <Route
           path="/"
           element={<Home />}
         />
 
-        {/* Restaurants */}
         <Route
           path="/restaurants"
           element={<Restaurants />}
         />
 
-        {/* Restaurant Details */}
-        <Route
-          path="/restaurant/:id"
-          element={<RestaurantDetails />}
-        />
-
-        {/* Cart */}
-        <Route
-          path="/cart"
-          element={<Cart />}
-        />
-
-        {/* Checkout */}
-        <Route
-          path="/checkout"
-          element={<Checkout />}
-        />
-
-        {/* Order Success */}
-        <Route
-          path="/order-success"
-          element={<OrderSuccess />}
-        />
-
-        {/* Login */}
         <Route
           path="/login"
           element={<Login />}
         />
 
-        {/* Register */}
         <Route
           path="/register"
           element={<Register />}
         />
 
-        {/* Protected Profile */}
+
+        {/* =========================
+            CUSTOMER ROUTES
+        ========================== */}
+
+        <Route
+          path="/restaurant/:id"
+          element={
+            <CustomerRoute>
+              <RestaurantDetails />
+            </CustomerRoute>
+          }
+        />
+
+        <Route
+          path="/cart"
+          element={
+            <CustomerRoute>
+              <Cart />
+            </CustomerRoute>
+          }
+        />
+
+        <Route
+          path="/checkout"
+          element={
+            <CustomerRoute>
+              <ProtectedRoute>
+                <Checkout />
+              </ProtectedRoute>
+            </CustomerRoute>
+          }
+        />
+
+        <Route
+          path="/order-success"
+          element={
+            <CustomerRoute>
+              <ProtectedRoute>
+                <OrderSuccess />
+              </ProtectedRoute>
+            </CustomerRoute>
+          }
+        />
+
+
+        {/* =========================
+            PROTECTED CUSTOMER ROUTES
+        ========================== */}
+
         <Route
           path="/profile"
           element={
@@ -93,19 +122,29 @@ function App() {
           }
         />
 
-        {/* Wishlist */}
         <Route
           path="/wishlist"
-          element={<Wishlist />}
+          element={
+            <ProtectedRoute>
+              <Wishlist />
+            </ProtectedRoute>
+          }
         />
 
-        {/* Orders */}
         <Route
           path="/orders"
-          element={<OrderHistory />}
+          element={
+            <ProtectedRoute>
+              <OrderHistory />
+            </ProtectedRoute>
+          }
         />
 
-        {/* Admin Dashboard */}
+
+        {/* =========================
+            ADMIN ROUTES
+        ========================== */}
+
         <Route
           path="/admin"
           element={
@@ -115,7 +154,39 @@ function App() {
           }
         />
 
-        {/* 404 Page */}
+        {/* Admin Users */}
+        <Route
+          path="/admin/users"
+          element={
+            <AdminRoute>
+              <AdminUsers />
+            </AdminRoute>
+          }
+        />
+
+        {/* Admin Restaurants */}
+        <Route
+          path="/admin/restaurants"
+          element={
+            <AdminRoute>
+              <AdminRestaurants />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/orders"
+          element={
+            <AdminRoute>
+              <AdminOrders />
+            </AdminRoute>
+          }
+        />
+
+
+        {/* =========================
+            404 PAGE
+        ========================== */}
+
         <Route
           path="*"
           element={<NotFound />}

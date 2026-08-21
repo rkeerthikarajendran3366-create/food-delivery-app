@@ -1,7 +1,6 @@
 import { Navigate } from "react-router-dom";
 
-function ProtectedRoute({ children }) {
-  const token = localStorage.getItem("token");
+function CustomerRoute({ children }) {
   const userData = localStorage.getItem("user");
 
   let user = null;
@@ -12,12 +11,7 @@ function ProtectedRoute({ children }) {
     console.error("User data parsing error:", error);
   }
 
-  // User is not logged in
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // Admin should not access customer-only pages
+  // Admin cannot access customer shopping pages
   if (user?.role === "admin") {
     return <Navigate to="/admin" replace />;
   }
@@ -25,4 +19,4 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
-export default ProtectedRoute;
+export default CustomerRoute;

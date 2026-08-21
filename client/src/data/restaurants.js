@@ -735,7 +735,7 @@ const restaurants = [
 
   },
   {
-    id: 19,
+    id: 21,
     name: "Chennai Food Corner",
     cuisine: "Indian",
     rating: 4.7,
@@ -747,7 +747,7 @@ const restaurants = [
 
     menu: [
       {
-        id: 1901,
+        id: 2101,
         name: "Chicken Meals",
         price: 220,
         image:
@@ -755,7 +755,7 @@ const restaurants = [
       },
 
       {
-        id: 1902,
+        id: 2102,
         name: "Paneer Butter Masala",
         price: 180,
         image:
@@ -763,7 +763,7 @@ const restaurants = [
       },
 
       {
-        id: 1903,
+        id: 2103,
         name: "Butter Naan",
         price: 60,
         image:

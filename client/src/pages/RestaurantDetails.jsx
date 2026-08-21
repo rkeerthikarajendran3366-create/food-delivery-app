@@ -12,20 +12,36 @@ import ReviewList from "../components/ReviewList";
 function RestaurantDetails() {
   const { id } = useParams();
 
-  const { addToCart } = useContext(CartContext);
+  const {
+    cart,
+    addToCart,
+    increaseQuantity,
+    decreaseQuantity,
+    removeItem,
+  } = useContext(CartContext);
 
   const restaurant = restaurants.find(
     (restaurant) => restaurant.id === Number(id)
   );
 
   const [reviews, setReviews] = useState(() => {
-    const savedReviews = localStorage.getItem("restaurantReviews");
+    const savedReviews =
+      localStorage.getItem("restaurantReviews");
 
-    return savedReviews ? JSON.parse(savedReviews) : [];
+    try {
+      return savedReviews
+        ? JSON.parse(savedReviews)
+        : [];
+    } catch {
+      return [];
+    }
   });
 
   const addReview = (newReview) => {
-    const updatedReviews = [...reviews, newReview];
+    const updatedReviews = [
+      ...reviews,
+      newReview,
+    ];
 
     setReviews(updatedReviews);
 
@@ -34,7 +50,9 @@ function RestaurantDetails() {
       JSON.stringify(updatedReviews)
     );
 
-    toast.success("Review added successfully ⭐");
+    toast.success(
+      "Review added successfully ⭐"
+    );
   };
 
   if (!restaurant) {
@@ -80,14 +98,45 @@ function RestaurantDetails() {
   }
 
   const restaurantReviews = reviews.filter(
-    (review) => review.restaurantId === restaurant.id
+    (review) =>
+      review.restaurantId === restaurant.id
   );
 
-  // Add item to cart
+  const getCartItem = (itemId) => {
+    return cart.find(
+      (cartItem) =>
+        String(cartItem.id) === String(itemId)
+    );
+  };
+
   const handleAddCart = (item) => {
     addToCart(item);
 
-    toast.success(`${item.name} added to cart 🛒`);
+    toast.success(
+      `${item.name} added to cart 🛒`,
+      {
+        duration: 1500,
+      }
+    );
+  };
+
+  const handleIncrease = (itemId) => {
+    increaseQuantity(itemId);
+  };
+
+  const handleDecrease = (itemId) => {
+    decreaseQuantity(itemId);
+  };
+
+  const handleRemove = (itemId) => {
+    removeItem(itemId);
+
+    toast.success(
+      "Item removed from cart 🗑️",
+      {
+        duration: 1500,
+      }
+    );
   };
 
   return (
@@ -99,26 +148,24 @@ function RestaurantDetails() {
         min-h-screen
         bg-gray-50
         dark:bg-gray-900
-        transition
       "
     >
-      {/* Back Button */}
+      {/* Back */}
 
-      <Link to="/restaurants">
-        <button
-          type="button"
-          className="
-            mb-6
-            bg-orange-500
-            hover:bg-orange-600
-            text-white
-            px-5
-            py-2
-            rounded-lg
-          "
-        >
-          ← Back
-        </button>
+      <Link
+        to="/restaurants"
+        className="
+          inline-block
+          mb-6
+          bg-orange-500
+          hover:bg-orange-600
+          text-white
+          px-5
+          py-2
+          rounded-lg
+        "
+      >
+        ← Back
       </Link>
 
       {/* Restaurant Image */}
@@ -219,89 +266,205 @@ function RestaurantDetails() {
       <div
         className="
           grid
+          grid-cols-1
           md:grid-cols-3
           gap-6
         "
       >
-        {restaurant.menu.map((item) => (
-          <div
-            key={item.id}
-            className="
-              bg-white
-              dark:bg-gray-800
-              rounded-xl
-              shadow-lg
-              overflow-hidden
-              hover:shadow-2xl
-              transition
-            "
-          >
-            {/* Food Image */}
+        {restaurant.menu.map((item) => {
+          const cartItem = getCartItem(item.id);
 
-            <img
-              src={item.image}
-              alt={item.name}
+          return (
+            <div
+              key={item.id}
               className="
-                w-full
-                h-52
-                object-cover
+                bg-white
+                dark:bg-gray-800
+                rounded-xl
+                shadow-lg
+                overflow-hidden
+                hover:shadow-2xl
+                transition
               "
-            />
+            >
+              {/* Food Image */}
 
-            <div className="p-4">
-              {/* Food Name */}
-
-              <h3
+              <img
+                src={item.image}
+                alt={item.name}
                 className="
-                  text-xl
-                  font-bold
-                  text-gray-900
-                  dark:text-white
-                "
-              >
-                {item.name}
-              </h3>
-
-              {/* Food Price */}
-
-              <p
-                className="
-                  text-orange-600
-                  font-semibold
-                  mt-2
-                "
-              >
-                ₹{item.price}
-              </p>
-
-              {/* Add to Cart */}
-
-              <button
-                type="button"
-                onClick={() => handleAddCart(item)}
-                className="
-                  mt-4
                   w-full
-                  bg-green-500
-                  hover:bg-green-600
-                  text-white
-                  py-2
-                  rounded-lg
-                  font-semibold
-                  transition
+                  h-52
+                  object-cover
                 "
-              >
-                Add to Cart 🛒
-              </button>
+              />
+
+              <div className="p-4">
+                {/* Food Name */}
+
+                <h3
+                  className="
+                    text-xl
+                    font-bold
+                    text-gray-900
+                    dark:text-white
+                  "
+                >
+                  {item.name}
+                </h3>
+
+                {/* Price */}
+
+                <p
+                  className="
+                    text-orange-600
+                    font-semibold
+                    mt-2
+                  "
+                >
+                  ₹{item.price}
+                </p>
+
+                {/* =========================
+                    ADD TO CART
+                ========================== */}
+
+                {!cartItem ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleAddCart(item)
+                    }
+                    className="
+                      mt-4
+                      w-full
+                      bg-green-500
+                      hover:bg-green-600
+                      active:scale-95
+                      text-white
+                      py-2
+                      rounded-lg
+                      font-semibold
+                      transition
+                    "
+                  >
+                    Add to Cart 🛒
+                  </button>
+                ) : (
+                  <div className="mt-4">
+                    {/* Quantity */}
+
+                    <div
+                      className="
+                        flex
+                        items-center
+                        justify-center
+                        gap-5
+                      "
+                    >
+                      {/* Minus */}
+
+                      <button
+                        type="button"
+                        aria-label={`Decrease ${item.name}`}
+                        onClick={() =>
+                          handleDecrease(item.id)
+                        }
+                        className="
+                          w-10
+                          h-10
+                          rounded-lg
+                          bg-gray-200
+                          dark:bg-gray-700
+                          text-gray-900
+                          dark:text-white
+                          text-xl
+                          font-bold
+                          hover:bg-gray-300
+                          dark:hover:bg-gray-600
+                          active:scale-95
+                          transition
+                        "
+                      >
+                        −
+                      </button>
+
+                      {/* Quantity */}
+
+                      <span
+                        className="
+                          min-w-10
+                          text-center
+                          text-lg
+                          font-bold
+                          text-gray-900
+                          dark:text-white
+                        "
+                      >
+                        {cartItem.quantity}
+                      </span>
+
+                      {/* Plus */}
+
+                      <button
+                        type="button"
+                        aria-label={`Increase ${item.name}`}
+                        onClick={() =>
+                          handleIncrease(item.id)
+                        }
+                        className="
+                          w-10
+                          h-10
+                          rounded-lg
+                          bg-green-500
+                          hover:bg-green-600
+                          active:scale-95
+                          text-white
+                          text-xl
+                          font-bold
+                          transition
+                        "
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    {/* Remove */}
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleRemove(item.id)
+                      }
+                      className="
+                        mt-3
+                        w-full
+                        bg-red-500
+                        hover:bg-red-600
+                        active:scale-95
+                        text-white
+                        py-2
+                        rounded-lg
+                        font-semibold
+                        transition
+                      "
+                    >
+                      Remove from Cart 🗑️
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Reviews */}
 
       <div className="mt-12">
-        <ReviewList reviews={restaurantReviews} />
+        <ReviewList
+          reviews={restaurantReviews}
+        />
 
         <ReviewForm
           restaurantId={restaurant.id}

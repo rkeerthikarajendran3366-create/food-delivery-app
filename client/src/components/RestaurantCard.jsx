@@ -130,23 +130,9 @@ function RestaurantCard(props) {
           {props.costForTwo}
         </p>
 
-        <Link to={`/restaurant/${props.id}`}>
-          <button
-            type="button"
-            className="
-              w-full
-              mt-4
-              bg-orange-500
-              hover:bg-orange-600
-              text-white
-              py-2
-              rounded-lg
-              transition
-            "
-          >
-            View Details
-          </button>
-        </Link>
+       <Link to={`/restaurant/${props.id}`}>
+  <button>View Details</button>
+</Link>
       </div>
     </div>
   );

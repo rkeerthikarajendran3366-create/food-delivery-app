@@ -5,15 +5,29 @@ import { CartContext } from "../context/CartContext";
 function Navbar() {
   const [open, setOpen] = useState(false);
 
-  const { cart } = useContext(CartContext);
+  const { cartCount } = useContext(CartContext);
 
   const navigate = useNavigate();
 
   const isLoggedIn = !!localStorage.getItem("token");
 
+  const userData = localStorage.getItem("user");
+
+  let user = null;
+
+  try {
+    user = userData ? JSON.parse(userData) : null;
+  } catch (error) {
+    console.error("User data parsing error:", error);
+  }
+
+  const isAdmin = user?.role === "admin";
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+
+    setOpen(false);
 
     alert("Logged out successfully");
 
@@ -43,6 +57,7 @@ function Navbar() {
         "
       >
         {/* Logo */}
+
         <Link
           to="/"
           className="
@@ -54,7 +69,10 @@ function Navbar() {
           🍔 FoodExpress
         </Link>
 
-        {/* Desktop Menu */}
+        {/* ================================
+            DESKTOP MENU
+        ================================= */}
+
         <div
           className="
             hidden
@@ -66,58 +84,146 @@ function Navbar() {
             dark:text-white
           "
         >
-          <Link to="/">Home</Link>
+          {/* Home */}
 
-          <Link to="/restaurants">Restaurants</Link>
-
-          <Link to="/wishlist">❤️ Wishlist</Link>
-
-          <Link to="/orders">📦 Orders</Link>
-
-          <Link
-            to="/cart"
-            className="relative"
-          >
-            🛒 Cart
-
-            {cart.length > 0 && (
-              <span
-                className="
-                  absolute
-                  -top-3
-                  -right-4
-                  bg-red-500
-                  text-white
-                  text-xs
-                  rounded-full
-                  px-2
-                "
-              >
-                {cart.length}
-              </span>
-            )}
+          <Link to="/">
+            Home
           </Link>
+
+          {/* Restaurants */}
+
+          <Link to="/restaurants">
+            Restaurants
+          </Link>
+
+          {/* ================================
+              CUSTOMER NAVIGATION
+          ================================= */}
+
+          {isLoggedIn && !isAdmin && (
+            <>
+              {/* Wishlist */}
+
+              <Link to="/wishlist">
+                ❤️ Wishlist
+              </Link>
+
+              {/* Orders */}
+
+              <Link to="/orders">
+                📦 Orders
+              </Link>
+
+              {/* Cart */}
+
+              <Link
+                to="/cart"
+                className="relative"
+              >
+                🛒 Cart
+
+                {cartCount > 0 && (
+                  <span
+                    className="
+                      absolute
+                      -top-3
+                      -right-4
+                      bg-red-500
+                      text-white
+                      text-xs
+                      rounded-full
+                      px-2
+                      min-w-5
+                      text-center
+                    "
+                  >
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+            </>
+          )}
+
+          {/* ================================
+              ADMIN NAVIGATION
+          ================================= */}
+
+          {isLoggedIn && isAdmin && (
+            <Link
+              to="/admin"
+              className="
+                text-orange-500
+                font-semibold
+              "
+            >
+              🛠️ Admin Dashboard
+            </Link>
+          )}
+
+          {/* ================================
+              LOGIN / PROFILE / LOGOUT
+          ================================= */}
 
           {isLoggedIn ? (
             <>
-              <Link to="/profile">👤 Profile</Link>
+              {/* Customer Profile */}
+
+              {!isAdmin && (
+                <Link to="/profile">
+                  👤 Profile
+                </Link>
+              )}
+
+              {/* Admin Label */}
+
+              {isAdmin && (
+                <span
+                  className="
+                    text-sm
+                    text-gray-500
+                    dark:text-gray-300
+                  "
+                >
+                  Admin
+                </span>
+              )}
+
+              {/* Logout */}
 
               <button
+                type="button"
                 onClick={handleLogout}
-                className="text-red-500 font-semibold"
+                className="
+                  text-red-500
+                  font-semibold
+                  hover:text-red-600
+                "
               >
                 🚪 Logout
               </button>
             </>
           ) : (
             <>
-              <Link to="/login">🔐 Login</Link>
+              {/* Login */}
 
-              <Link to="/register">📝 Register</Link>
+              <Link to="/login">
+                🔐 Login
+              </Link>
+
+              {/* Register */}
+
+              <Link to="/register">
+                📝 Register
+              </Link>
             </>
           )}
 
+          {/* ================================
+              DARK MODE
+          ================================= */}
+
           <button
+            type="button"
             className="
               bg-gray-200
               dark:bg-gray-700
@@ -126,15 +232,21 @@ function Navbar() {
               rounded-full
             "
             onClick={() =>
-              document.documentElement.classList.toggle("dark")
+              document.documentElement.classList.toggle(
+                "dark"
+              )
             }
           >
             🌙
           </button>
         </div>
 
-        {/* Mobile Menu Button */}
+        {/* ================================
+            MOBILE MENU BUTTON
+        ================================= */}
+
         <button
+          type="button"
           className="
             md:hidden
             text-3xl
@@ -147,7 +259,10 @@ function Navbar() {
         </button>
       </div>
 
-      {/* Mobile Menu */}
+      {/* ================================
+          MOBILE MENU
+      ================================= */}
+
       {open && (
         <div
           className="
@@ -161,6 +276,8 @@ function Navbar() {
             dark:text-white
           "
         >
+          {/* Home */}
+
           <Link
             to="/"
             onClick={() => setOpen(false)}
@@ -168,6 +285,8 @@ function Navbar() {
           >
             Home
           </Link>
+
+          {/* Restaurants */}
 
           <Link
             to="/restaurants"
@@ -177,32 +296,44 @@ function Navbar() {
             Restaurants
           </Link>
 
-          <Link
-            to="/wishlist"
-            onClick={() => setOpen(false)}
-            className="block"
-          >
-            ❤️ Wishlist
-          </Link>
+          {/* ================================
+              CUSTOMER MOBILE NAVIGATION
+          ================================= */}
 
-          <Link
-            to="/orders"
-            onClick={() => setOpen(false)}
-            className="block"
-          >
-            📦 Orders
-          </Link>
-
-          <Link
-            to="/cart"
-            onClick={() => setOpen(false)}
-            className="block"
-          >
-            🛒 Cart ({cart.length})
-          </Link>
-
-          {isLoggedIn ? (
+          {isLoggedIn && !isAdmin && (
             <>
+              {/* Wishlist */}
+
+              <Link
+                to="/wishlist"
+                onClick={() => setOpen(false)}
+                className="block"
+              >
+                ❤️ Wishlist
+              </Link>
+
+              {/* Orders */}
+
+              <Link
+                to="/orders"
+                onClick={() => setOpen(false)}
+                className="block"
+              >
+                📦 Orders
+              </Link>
+
+              {/* Cart */}
+
+              <Link
+                to="/cart"
+                onClick={() => setOpen(false)}
+                className="block"
+              >
+                🛒 Cart ({cartCount})
+              </Link>
+
+              {/* Profile */}
+
               <Link
                 to="/profile"
                 onClick={() => setOpen(false)}
@@ -210,19 +341,47 @@ function Navbar() {
               >
                 👤 Profile
               </Link>
-
-              <button
-                onClick={() => {
-                  handleLogout();
-                  setOpen(false);
-                }}
-                className="block text-red-500 font-semibold"
-              >
-                🚪 Logout
-              </button>
             </>
+          )}
+
+          {/* ================================
+              ADMIN MOBILE NAVIGATION
+          ================================= */}
+
+          {isLoggedIn && isAdmin && (
+            <Link
+              to="/admin"
+              onClick={() => setOpen(false)}
+              className="
+                block
+                text-orange-500
+                font-semibold
+              "
+            >
+              🛠️ Admin Dashboard
+            </Link>
+          )}
+
+          {/* ================================
+              LOGIN / LOGOUT
+          ================================= */}
+
+          {isLoggedIn ? (
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="
+                block
+                text-red-500
+                font-semibold
+              "
+            >
+              🚪 Logout
+            </button>
           ) : (
             <>
+              {/* Login */}
+
               <Link
                 to="/login"
                 onClick={() => setOpen(false)}
@@ -230,6 +389,8 @@ function Navbar() {
               >
                 🔐 Login
               </Link>
+
+              {/* Register */}
 
               <Link
                 to="/register"
@@ -241,9 +402,16 @@ function Navbar() {
             </>
           )}
 
+          {/* ================================
+              DARK MODE
+          ================================= */}
+
           <button
+            type="button"
             onClick={() =>
-              document.documentElement.classList.toggle("dark")
+              document.documentElement.classList.toggle(
+                "dark"
+              )
             }
             className="
               bg-gray-200
