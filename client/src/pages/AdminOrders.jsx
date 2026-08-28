@@ -4,6 +4,14 @@ import { Link } from "react-router-dom";
 function AdminOrders() {
   const [orders, setOrders] = useState([]);
 
+  const statuses = [
+    "Order Placed",
+    "Preparing",
+    "Out for Delivery",
+    "Delivered",
+    "Cancelled",
+  ];
+
   const loadOrders = () => {
     const savedOrders =
       JSON.parse(localStorage.getItem("orders")) || [];
@@ -18,6 +26,34 @@ function AdminOrders() {
   useEffect(() => {
     loadOrders();
   }, []);
+
+  // Update order status
+  const handleStatusChange = (orderId, newStatus) => {
+    const savedOrders =
+      JSON.parse(localStorage.getItem("orders")) || [];
+
+    const updatedOrders = savedOrders.map((order) => {
+      if (String(order.id) === String(orderId)) {
+        return {
+          ...order,
+          status: newStatus,
+        };
+      }
+
+      return order;
+    });
+
+    localStorage.setItem(
+      "orders",
+      JSON.stringify(updatedOrders)
+    );
+
+    setOrders(
+      [...updatedOrders].sort(
+        (a, b) => Number(b.id) - Number(a.id)
+      )
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6">
@@ -170,6 +206,7 @@ function AdminOrders() {
                   p-6
                 "
               >
+
                 {/* Order Header */}
                 <div
                   className="
@@ -177,7 +214,7 @@ function AdminOrders() {
                     flex-col
                     md:flex-row
                     justify-between
-                    gap-3
+                    gap-4
                     border-b
                     border-gray-200
                     dark:border-gray-700
@@ -207,21 +244,110 @@ function AdminOrders() {
                     </p>
                   </div>
 
+                  {/* Current Status */}
                   <span
-                    className="
+                    className={`
                       self-start
                       px-4
                       py-2
                       rounded-full
-                      bg-green-100
-                      text-green-700
-                      dark:bg-green-900
-                      dark:text-green-200
                       font-semibold
+                      ${
+                        order.status === "Delivered"
+                          ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200"
+                          : order.status === "Cancelled"
+                          ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200"
+                          : order.status === "Out for Delivery"
+                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+                          : order.status === "Preparing"
+                          ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200"
+                          : "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200"
+                      }
+                    `}
+                  >
+                    {order.status || "Order Placed"}
+                  </span>
+                </div>
+
+                {/* Update Status */}
+                <div
+                  className="
+                    mt-5
+                    p-4
+                    bg-blue-50
+                    dark:bg-gray-700
+                    rounded-lg
+                  "
+                >
+                  <h3
+                    className="
+                      font-bold
+                      text-lg
+                      text-gray-900
+                      dark:text-white
+                      mb-3
                     "
                   >
-                    {order.status || "Confirmed"}
-                  </span>
+                    🚚 Update Delivery Status
+                  </h3>
+
+                  <div
+                    className="
+                      flex
+                      flex-col
+                      sm:flex-row
+                      gap-3
+                      items-start
+                      sm:items-center
+                    "
+                  >
+                    <select
+                      value={order.status || "Order Placed"}
+                      onChange={(e) =>
+                        handleStatusChange(
+                          order.id,
+                          e.target.value
+                        )
+                      }
+                      className="
+                        w-full
+                        sm:w-auto
+                        min-w-[220px]
+                        border
+                        border-gray-300
+                        dark:border-gray-600
+                        bg-white
+                        dark:bg-gray-800
+                        text-gray-900
+                        dark:text-white
+                        rounded-lg
+                        px-4
+                        py-2
+                        focus:outline-none
+                        focus:ring-2
+                        focus:ring-blue-500
+                      "
+                    >
+                      {statuses.map((status) => (
+                        <option
+                          key={status}
+                          value={status}
+                        >
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+
+                    <span
+                      className="
+                        text-sm
+                        text-gray-600
+                        dark:text-gray-300
+                      "
+                    >
+                      Select a status to update this order.
+                    </span>
+                  </div>
                 </div>
 
                 {/* Customer Details */}
@@ -247,57 +373,32 @@ function AdminOrders() {
                   </h3>
 
                   <div className="space-y-2">
-                    <p
-                      className="
-                        text-gray-700
-                        dark:text-gray-200
-                      "
-                    >
+                    <p className="text-gray-700 dark:text-gray-200">
                       👤 <strong>Name:</strong>{" "}
                       {order.customer?.name ||
                         "Not available"}
                     </p>
 
-                    <p
-                      className="
-                        text-gray-700
-                        dark:text-gray-200
-                      "
-                    >
+                    <p className="text-gray-700 dark:text-gray-200">
                       📱 <strong>Phone:</strong>{" "}
                       {order.customer?.phone ||
                         "Not available"}
                     </p>
 
-                    <p
-                      className="
-                        text-gray-700
-                        dark:text-gray-200
-                      "
-                    >
+                    <p className="text-gray-700 dark:text-gray-200">
                       📍 <strong>Address:</strong>{" "}
                       {order.customer?.address ||
                         "Not available"}
                     </p>
 
-                    <p
-                      className="
-                        text-gray-700
-                        dark:text-gray-200
-                      "
-                    >
+                    <p className="text-gray-700 dark:text-gray-200">
                       💳 <strong>Payment:</strong>{" "}
                       {order.customer?.payment ||
                         "Not available"}
                     </p>
 
                     {order.userEmail && (
-                      <p
-                        className="
-                          text-gray-700
-                          dark:text-gray-200
-                        "
-                      >
+                      <p className="text-gray-700 dark:text-gray-200">
                         📧 <strong>Account:</strong>{" "}
                         {order.userEmail}
                       </p>
@@ -323,9 +424,7 @@ function AdminOrders() {
                     {order.items?.map(
                       (item, itemIndex) => (
                         <div
-                          key={
-                            `${item.id}-${itemIndex}`
-                          }
+                          key={`${item.id}-${itemIndex}`}
                           className="
                             flex
                             justify-between
@@ -367,7 +466,7 @@ function AdminOrders() {
                             "
                           >
                             ₹
-                            {item.price *
+                            {Number(item.price || 0) *
                               (item.quantity || 1)}
                           </p>
                         </div>
@@ -398,14 +497,15 @@ function AdminOrders() {
                     Total: ₹{order.total}
                   </h3>
                 </div>
+
               </div>
             ))}
           </div>
         )}
-
       </div>
     </div>
   );
 }
 
 export default AdminOrders;
+
