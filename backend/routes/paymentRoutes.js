@@ -5,12 +5,32 @@ const {
   verifyPayment,
 } = require("../controllers/paymentController");
 
+const {
+  authenticate,
+} = require("../middleware/authMiddleware");
+
 const router = express.Router();
 
-// Create Razorpay order
-router.post("/create-order", createOrder);
+// =====================================================
+// CREATE RAZORPAY ORDER
+// Logged-in users only
+// =====================================================
 
-// Verify Razorpay payment
-router.post("/verify-payment", verifyPayment);
+router.post(
+  "/create-order",
+  authenticate,
+  createOrder
+);
+
+// =====================================================
+// VERIFY RAZORPAY PAYMENT
+// Logged-in users only
+// =====================================================
+
+router.post(
+  "/verify-payment",
+  authenticate,
+  verifyPayment
+);
 
 module.exports = router;

@@ -70,11 +70,7 @@ function App() {
 
         <Route
           path="/restaurant/:id"
-          element={
-            <CustomerRoute>
-              <RestaurantDetails />
-            </CustomerRoute>
-          }
+          element={<RestaurantDetails />}
         />
 
         <Route

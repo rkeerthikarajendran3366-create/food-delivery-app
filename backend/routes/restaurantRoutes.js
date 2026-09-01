@@ -8,15 +8,38 @@ const {
   createRestaurant,
 } = require("../controllers/restaurantController");
 
+const {
+  authenticate,
+  authorize,
+} = require("../middleware/authMiddleware");
+
 const router = express.Router();
 
-// Get all restaurants
+// =====================================================
+// GET ALL RESTAURANTS
+// Public
+// =====================================================
+
 router.get("/", getRestaurants);
 
-// Get restaurant by ID
+// =====================================================
+// GET RESTAURANT BY ID
+// Public
+// User + Admin can view details
+// =====================================================
+
 router.get("/:id", getRestaurantById);
 
-// Create restaurant
-router.post("/", createRestaurant);
+// =====================================================
+// CREATE RESTAURANT
+// Admin Only
+// =====================================================
+
+router.post(
+  "/",
+  authenticate,
+  authorize("admin"),
+  createRestaurant
+);
 
 module.exports = router;

@@ -6,23 +6,36 @@ const {
   getAllUsers,
 } = require("../controllers/authController");
 
+const {
+  authenticate,
+  authorize,
+} = require("../middleware/authMiddleware");
+
 const router = express.Router();
 
-// Register
-router.post(
-  "/register",
-  registerUser
-);
+// =====================================================
+// REGISTER
+// Public
+// =====================================================
 
-// Login
-router.post(
-  "/login",
-  loginUser
-);
+router.post("/register", registerUser);
 
-// Get all users - Admin
+// =====================================================
+// LOGIN
+// Public
+// =====================================================
+
+router.post("/login", loginUser);
+
+// =====================================================
+// GET ALL USERS
+// Admin Only
+// =====================================================
+
 router.get(
   "/users",
+  authenticate,
+  authorize("admin"),
   getAllUsers
 );
 

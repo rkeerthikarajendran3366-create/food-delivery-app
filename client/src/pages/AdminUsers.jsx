@@ -14,7 +14,7 @@ function AdminUsers() {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        "http://localhost:5000/api/auth/users",
+        "https://foodexpress-backend-p9dv.onrender.com/api/auth/users",
         {
           method: "GET",
           headers: {

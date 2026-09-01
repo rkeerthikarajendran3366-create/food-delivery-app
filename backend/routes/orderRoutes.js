@@ -1,38 +1,38 @@
 const express = require("express");
 
 const {
-  registerUser,
-  loginUser,
-  getAllUsers,
-} = require("../controllers/authController");
+  createOrder,
+  getUserOrders,
+  getAllOrders,
+  updateOrderStatus,
+} = require("../controllers/orderController");
 
 const router = express.Router();
 
 // =====================================================
-// REGISTER
+// CREATE ORDER
 // =====================================================
 
-router.post(
-  "/register",
-  registerUser
-);
+router.post("/", createOrder);
 
 // =====================================================
-// LOGIN
+// GET ALL ORDERS (ADMIN)
+// NOTE: this must be defined BEFORE "/:userId",
+// otherwise Express matches "admin" as a userId.
 // =====================================================
 
-router.post(
-  "/login",
-  loginUser
-);
+router.get("/admin", getAllOrders);
 
 // =====================================================
-// GET ALL USERS
+// UPDATE ORDER STATUS (ADMIN)
 // =====================================================
 
-router.get(
-  "/users",
-  getAllUsers
-);
+router.put("/:id/status", updateOrderStatus);
+
+// =====================================================
+// GET ORDERS FOR A SPECIFIC USER
+// =====================================================
+
+router.get("/:userId", getUserOrders);
 
 module.exports = router;

@@ -1,11 +1,13 @@
 const Order = require("../models/Order");
 
-// Create new order
+// =====================================================
+// CREATE NEW ORDER
+// Logged-in users only
+// =====================================================
+
 const createOrder = async (req, res) => {
   try {
     const {
-      userId,
-      userEmail,
       customer,
       items,
       total,
@@ -16,10 +18,12 @@ const createOrder = async (req, res) => {
       razorpayOrderId,
     } = req.body;
 
+    // User comes from authenticated JWT
+    const userId = req.user._id;
+    const userEmail = req.user.email;
+
     // Basic validation
     if (
-      !userId ||
-      !userEmail ||
       !customer ||
       !items ||
       !items.length ||
@@ -31,7 +35,7 @@ const createOrder = async (req, res) => {
       });
     }
 
-    // Create order
+    // Create order using authenticated user's identity
     const order = await Order.create({
       userId,
       userEmail,
@@ -66,13 +70,29 @@ const createOrder = async (req, res) => {
   }
 };
 
-// Get orders for a specific user
+// =====================================================
+// GET USER'S OWN ORDERS
+// Logged-in users only
+// =====================================================
+
 const getUserOrders = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const requestedUserId = req.params.userId;
+    const loggedInUserId = req.user._id.toString();
+
+    // Users can only access their own orders
+    if (
+      req.user.role !== "admin" &&
+      requestedUserId !== loggedInUserId
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. You can only view your own orders.",
+      });
+    }
 
     const orders = await Order.find({
-      userId,
+      userId: requestedUserId,
     }).sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -90,7 +110,11 @@ const getUserOrders = async (req, res) => {
   }
 };
 
-// Get all orders for admin
+// =====================================================
+// GET ALL ORDERS
+// Admin only
+// =====================================================
+
 const getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find()
@@ -112,7 +136,11 @@ const getAllOrders = async (req, res) => {
   }
 };
 
-// Update order status
+// =====================================================
+// UPDATE ORDER STATUS
+// Admin only
+// =====================================================
+
 const updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;

@@ -1,58 +1,149 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
+
+const BACKEND_URL =
+  "https://foodexpress-backend-p9dv.onrender.com";
+
+const STATUS_OPTIONS = [
+  "Confirmed",
+  "Preparing",
+  "Out for Delivery",
+  "Delivered",
+  "Cancelled",
+];
+
+const STATUS_COLORS = {
+  Confirmed:
+    "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200",
+  Preparing:
+    "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200",
+  "Out for Delivery":
+    "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200",
+  Delivered:
+    "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200",
+  Cancelled:
+    "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200",
+};
 
 function AdminOrders() {
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState(null);
 
-  const statuses = [
-    "Order Placed",
-    "Preparing",
-    "Out for Delivery",
-    "Delivered",
-    "Cancelled",
-  ];
+  // =====================================================
+  // LOAD ORDERS FROM BACKEND
+  // =====================================================
 
-  const loadOrders = () => {
-    const savedOrders =
-      JSON.parse(localStorage.getItem("orders")) || [];
+  const loadOrders = async () => {
+    setLoading(true);
 
-    const sortedOrders = [...savedOrders].sort(
-      (a, b) => Number(b.id) - Number(a.id)
-    );
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/api/orders/admin`
+      );
 
-    setOrders(sortedOrders);
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        console.error(
+          "❌ Failed to load orders:",
+          data
+        );
+
+        toast.error(
+          data.message || "Failed to load orders"
+        );
+
+        setOrders([]);
+        return;
+      }
+
+      setOrders(data.orders || []);
+    } catch (error) {
+      console.error(
+        "❌ Load Orders Error:",
+        error
+      );
+
+      toast.error(
+        "Could not connect to server to load orders"
+      );
+
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadOrders();
   }, []);
 
-  // Update order status
-  const handleStatusChange = (orderId, newStatus) => {
-    const savedOrders =
-      JSON.parse(localStorage.getItem("orders")) || [];
+  // =====================================================
+  // UPDATE ORDER STATUS
+  // =====================================================
 
-    const updatedOrders = savedOrders.map((order) => {
-      if (String(order.id) === String(orderId)) {
-        return {
-          ...order,
-          status: newStatus,
-        };
+  const handleStatusChange = async (
+    orderId,
+    newStatus
+  ) => {
+    setUpdatingId(orderId);
+
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/api/orders/${orderId}/status`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: newStatus,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        console.error(
+          "❌ Status update failed:",
+          data
+        );
+
+        toast.error(
+          data.message ||
+            "Failed to update order status"
+        );
+
+        return;
       }
 
-      return order;
-    });
+      // Update the order in local state without a full reload
+      setOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          order._id === orderId
+            ? { ...order, status: newStatus }
+            : order
+        )
+      );
 
-    localStorage.setItem(
-      "orders",
-      JSON.stringify(updatedOrders)
-    );
+      toast.success(
+        `Order marked as "${newStatus}"`
+      );
+    } catch (error) {
+      console.error(
+        "❌ Update Status Error:",
+        error
+      );
 
-    setOrders(
-      [...updatedOrders].sort(
-        (a, b) => Number(b.id) - Number(a.id)
-      )
-    );
+      toast.error(
+        "Could not connect to server to update status"
+      );
+    } finally {
+      setUpdatingId(null);
+    }
   };
 
   return (
@@ -116,9 +207,11 @@ function AdminOrders() {
           <button
             type="button"
             onClick={loadOrders}
+            disabled={loading}
             className="
               bg-blue-600
               hover:bg-blue-700
+              disabled:opacity-50
               text-white
               px-5
               py-2
@@ -126,7 +219,7 @@ function AdminOrders() {
               transition
             "
           >
-            🔄 Refresh
+            {loading ? "Loading..." : "🔄 Refresh"}
           </button>
         </div>
 
@@ -156,8 +249,24 @@ function AdminOrders() {
           </p>
         </div>
 
-        {/* No Orders */}
-        {orders.length === 0 ? (
+        {/* Loading */}
+        {loading ? (
+          <div
+            className="
+              bg-white
+              dark:bg-gray-800
+              rounded-xl
+              shadow-lg
+              p-10
+              text-center
+              text-gray-600
+              dark:text-gray-300
+            "
+          >
+            Loading orders...
+          </div>
+        ) : orders.length === 0 ? (
+          /* No Orders */
           <div
             className="
               bg-white
@@ -195,9 +304,9 @@ function AdminOrders() {
           </div>
         ) : (
           <div className="space-y-6">
-            {orders.map((order, index) => (
+            {orders.map((order) => (
               <div
-                key={order.id || index}
+                key={order._id}
                 className="
                   bg-white
                   dark:bg-gray-800
@@ -206,7 +315,6 @@ function AdminOrders() {
                   p-6
                 "
               >
-
                 {/* Order Header */}
                 <div
                   className="
@@ -214,7 +322,7 @@ function AdminOrders() {
                     flex-col
                     md:flex-row
                     justify-between
-                    gap-4
+                    gap-3
                     border-b
                     border-gray-200
                     dark:border-gray-700
@@ -230,7 +338,7 @@ function AdminOrders() {
                         dark:text-white
                       "
                     >
-                      Order #{order.id}
+                      Order #{order._id?.slice(-8)}
                     </h2>
 
                     <p
@@ -240,113 +348,74 @@ function AdminOrders() {
                         dark:text-gray-400
                       "
                     >
-                      📅 {order.date}
+                      📅{" "}
+                      {order.createdAt
+                        ? new Date(
+                            order.createdAt
+                          ).toLocaleString()
+                        : "N/A"}
                     </p>
                   </div>
 
-                  {/* Current Status */}
-                  <span
-                    className={`
-                      self-start
-                      px-4
-                      py-2
-                      rounded-full
-                      font-semibold
-                      ${
-                        order.status === "Delivered"
-                          ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200"
-                          : order.status === "Cancelled"
-                          ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200"
-                          : order.status === "Out for Delivery"
-                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                          : order.status === "Preparing"
-                          ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200"
-                          : "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200"
-                      }
-                    `}
-                  >
-                    {order.status || "Order Placed"}
-                  </span>
-                </div>
+                  {/* STATUS DROPDOWN — this is the missing piece */}
+                  <div className="flex flex-col items-start md:items-end gap-1">
+                    <span
+                      className={`
+                        self-start
+                        px-4
+                        py-1
+                        rounded-full
+                        font-semibold
+                        text-sm
+                        ${
+                          STATUS_COLORS[
+                            order.status
+                          ] ||
+                          "bg-gray-100 text-gray-700"
+                        }
+                      `}
+                    >
+                      {order.status || "Confirmed"}
+                    </span>
 
-                {/* Update Status */}
-                <div
-                  className="
-                    mt-5
-                    p-4
-                    bg-blue-50
-                    dark:bg-gray-700
-                    rounded-lg
-                  "
-                >
-                  <h3
-                    className="
-                      font-bold
-                      text-lg
-                      text-gray-900
-                      dark:text-white
-                      mb-3
-                    "
-                  >
-                    🚚 Update Delivery Status
-                  </h3>
-
-                  <div
-                    className="
-                      flex
-                      flex-col
-                      sm:flex-row
-                      gap-3
-                      items-start
-                      sm:items-center
-                    "
-                  >
                     <select
-                      value={order.status || "Order Placed"}
+                      value={order.status || "Confirmed"}
+                      disabled={
+                        updatingId === order._id
+                      }
                       onChange={(e) =>
                         handleStatusChange(
-                          order.id,
+                          order._id,
                           e.target.value
                         )
                       }
                       className="
-                        w-full
-                        sm:w-auto
-                        min-w-[220px]
                         border
                         border-gray-300
                         dark:border-gray-600
                         bg-white
-                        dark:bg-gray-800
+                        dark:bg-gray-700
                         text-gray-900
                         dark:text-white
                         rounded-lg
-                        px-4
-                        py-2
-                        focus:outline-none
+                        px-3
+                        py-1
+                        text-sm
+                        outline-none
                         focus:ring-2
-                        focus:ring-blue-500
+                        focus:ring-orange-400
+                        disabled:opacity-50
                       "
                     >
-                      {statuses.map((status) => (
+                      {STATUS_OPTIONS.map((option) => (
                         <option
-                          key={status}
-                          value={status}
+                          key={option}
+                          value={option}
                         >
-                          {status}
+                          {option}
                         </option>
                       ))}
                     </select>
-
-                    <span
-                      className="
-                        text-sm
-                        text-gray-600
-                        dark:text-gray-300
-                      "
-                    >
-                      Select a status to update this order.
-                    </span>
                   </div>
                 </div>
 
@@ -373,32 +442,62 @@ function AdminOrders() {
                   </h3>
 
                   <div className="space-y-2">
-                    <p className="text-gray-700 dark:text-gray-200">
+                    <p
+                      className="
+                        text-gray-700
+                        dark:text-gray-200
+                      "
+                    >
                       👤 <strong>Name:</strong>{" "}
                       {order.customer?.name ||
                         "Not available"}
                     </p>
 
-                    <p className="text-gray-700 dark:text-gray-200">
+                    <p
+                      className="
+                        text-gray-700
+                        dark:text-gray-200
+                      "
+                    >
                       📱 <strong>Phone:</strong>{" "}
                       {order.customer?.phone ||
                         "Not available"}
                     </p>
 
-                    <p className="text-gray-700 dark:text-gray-200">
+                    <p
+                      className="
+                        text-gray-700
+                        dark:text-gray-200
+                      "
+                    >
                       📍 <strong>Address:</strong>{" "}
                       {order.customer?.address ||
                         "Not available"}
                     </p>
 
-                    <p className="text-gray-700 dark:text-gray-200">
+                    <p
+                      className="
+                        text-gray-700
+                        dark:text-gray-200
+                      "
+                    >
                       💳 <strong>Payment:</strong>{" "}
                       {order.customer?.payment ||
                         "Not available"}
+                      {order.paymentStatus && (
+                        <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                          ({order.paymentStatus})
+                        </span>
+                      )}
                     </p>
 
                     {order.userEmail && (
-                      <p className="text-gray-700 dark:text-gray-200">
+                      <p
+                        className="
+                          text-gray-700
+                          dark:text-gray-200
+                        "
+                      >
                         📧 <strong>Account:</strong>{" "}
                         {order.userEmail}
                       </p>
@@ -466,7 +565,7 @@ function AdminOrders() {
                             "
                           >
                             ₹
-                            {Number(item.price || 0) *
+                            {item.price *
                               (item.quantity || 1)}
                           </p>
                         </div>
@@ -497,15 +596,14 @@ function AdminOrders() {
                     Total: ₹{order.total}
                   </h3>
                 </div>
-
               </div>
             ))}
           </div>
         )}
+
       </div>
     </div>
   );
 }
 
 export default AdminOrders;
-
