@@ -1,60 +1,73 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
+import toast from "react-hot-toast";
+
+const BACKEND_URL =
+  "https://foodexpress-backend-p9dv.onrender.com";
 
 function OrderHistory() {
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const user = JSON.parse(localStorage.getItem("user"));
 
   const currentUserId = user?._id || user?.id;
-  const currentUserEmail = user?.email?.toLowerCase();
+
+  // =====================================================
+  // LOAD ORDERS FROM BACKEND
+  // =====================================================
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !currentUserId) {
       setOrders([]);
+      setLoading(false);
       return;
     }
 
-    const savedOrders =
-      JSON.parse(localStorage.getItem("orders")) || [];
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
 
-    const userOrders = savedOrders.filter((order) => {
-      const orderUserId = order.userId
-        ? String(order.userId)
-        : null;
+        const response = await fetch(
+          `${BACKEND_URL}/api/orders/${currentUserId}`
+        );
 
-      const orderUserEmail = order.userEmail
-        ? order.userEmail.toLowerCase()
-        : null;
+        const data = await response.json();
 
-      // Match user ID
-      if (
-        currentUserId &&
-        orderUserId &&
-        orderUserId === String(currentUserId)
-      ) {
-        return true;
+        if (!response.ok || !data.success) {
+          console.error(
+            "❌ Failed to load orders:",
+            data
+          );
+
+          toast.error(
+            data.message || "Failed to load your orders"
+          );
+
+          setOrders([]);
+          return;
+        }
+
+        // Backend already returns newest first (sorted by createdAt)
+        setOrders(data.orders || []);
+      } catch (error) {
+        console.error(
+          "❌ Load Order History Error:",
+          error
+        );
+
+        toast.error(
+          "Could not connect to server to load your orders"
+        );
+
+        setOrders([]);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // Match email as fallback
-      if (
-        currentUserEmail &&
-        orderUserEmail &&
-        orderUserEmail === currentUserEmail
-      ) {
-        return true;
-      }
-
-      return false;
-    });
-
-    // Latest orders first
-    userOrders.sort(
-      (a, b) => Number(b.id) - Number(a.id)
-    );
-
-    setOrders(userOrders);
-  }, [currentUserId, currentUserEmail]);
+    fetchOrders();
+  }, [currentUserId]);
 
   // Not logged in
   if (!user) {
@@ -147,7 +160,23 @@ function OrderHistory() {
           </p>
         </div>
 
-        {orders.length === 0 ? (
+        {loading ? (
+          /* Loading */
+          <div
+            className="
+              bg-white
+              dark:bg-gray-800
+              shadow-lg
+              rounded-xl
+              p-8
+              text-center
+              text-gray-600
+              dark:text-gray-300
+            "
+          >
+            Loading your orders...
+          </div>
+        ) : orders.length === 0 ? (
           /* No Orders */
           <div
             className="
@@ -192,7 +221,7 @@ function OrderHistory() {
 
               return (
                 <div
-                  key={order.id}
+                  key={order._id}
                   className="
                     bg-white
                     dark:bg-gray-800
@@ -223,7 +252,7 @@ function OrderHistory() {
                           dark:text-white
                         "
                       >
-                        Order #{order.id}
+                        Order #{order._id?.slice(-8)}
                       </h2>
 
                       <p
@@ -233,7 +262,12 @@ function OrderHistory() {
                           mt-2
                         "
                       >
-                        📅 {order.date}
+                        📅{" "}
+                        {order.createdAt
+                          ? new Date(
+                              order.createdAt
+                            ).toLocaleString()
+                          : "N/A"}
                       </p>
                     </div>
 
@@ -500,6 +534,11 @@ function OrderHistory() {
                         <p className="text-gray-700 dark:text-gray-200">
                           💳 <strong>Payment:</strong>{" "}
                           {order.customer.payment}
+                          {order.paymentStatus && (
+                            <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                              ({order.paymentStatus})
+                            </span>
+                          )}
                         </p>
 
                       </div>
