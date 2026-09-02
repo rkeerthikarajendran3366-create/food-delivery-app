@@ -7,32 +7,47 @@ const {
   updateOrderStatus,
 } = require("../controllers/orderController");
 
+const {
+  authenticate,
+  authorize,
+} = require("../middleware/authMiddleware");
+
 const router = express.Router();
 
 // =====================================================
-// CREATE ORDER
+// CREATE ORDER — logged-in users
 // =====================================================
 
-router.post("/", createOrder);
+router.post("/", authenticate, createOrder);
 
 // =====================================================
-// GET ALL ORDERS (ADMIN)
-// NOTE: this must be defined BEFORE "/:userId",
+// GET ALL ORDERS — admin only
+// NOTE: must be defined BEFORE "/:userId",
 // otherwise Express matches "admin" as a userId.
 // =====================================================
 
-router.get("/admin", getAllOrders);
+router.get(
+  "/admin",
+  authenticate,
+  authorize("admin"),
+  getAllOrders
+);
 
 // =====================================================
-// UPDATE ORDER STATUS (ADMIN)
+// UPDATE ORDER STATUS — admin only
 // =====================================================
 
-router.put("/:id/status", updateOrderStatus);
+router.put(
+  "/:id/status",
+  authenticate,
+  authorize("admin"),
+  updateOrderStatus
+);
 
 // =====================================================
-// GET ORDERS FOR A SPECIFIC USER
+// GET ORDERS FOR A SPECIFIC USER — logged-in users
 // =====================================================
 
-router.get("/:userId", getUserOrders);
+router.get("/:userId", authenticate, getUserOrders);
 
 module.exports = router;

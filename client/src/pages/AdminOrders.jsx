@@ -39,8 +39,17 @@ function AdminOrders() {
     setLoading(true);
 
     try {
+      const token = localStorage.getItem("token");
+
       const response = await fetch(
-        `${BACKEND_URL}/api/orders/admin`
+        `${BACKEND_URL}/api/orders/admin`,
+        {
+          headers: {
+            ...(token && {
+              Authorization: `Bearer ${token}`,
+            }),
+          },
+        }
       );
 
       const data = await response.json();
@@ -91,12 +100,17 @@ function AdminOrders() {
     setUpdatingId(orderId);
 
     try {
+      const token = localStorage.getItem("token");
+
       const response = await fetch(
         `${BACKEND_URL}/api/orders/${orderId}/status`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            ...(token && {
+              Authorization: `Bearer ${token}`,
+            }),
           },
           body: JSON.stringify({
             status: newStatus,

@@ -28,8 +28,17 @@ function OrderHistory() {
       try {
         setLoading(true);
 
+        const token = localStorage.getItem("token");
+
         const response = await fetch(
-          `${BACKEND_URL}/api/orders/${currentUserId}`
+          `${BACKEND_URL}/api/orders/${currentUserId}`,
+          {
+            headers: {
+              ...(token && {
+                Authorization: `Bearer ${token}`,
+              }),
+            },
+          }
         );
 
         const data = await response.json();

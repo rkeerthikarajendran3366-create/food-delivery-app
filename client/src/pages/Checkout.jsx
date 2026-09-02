@@ -53,10 +53,10 @@ function Checkout() {
   // CREATE FOOD ORDER
   // =====================================================
 
-  const handlePlaceOrder = (customerDetails) => {
-    const existingOrders =
-      JSON.parse(localStorage.getItem("orders")) || [];
-
+  const handlePlaceOrder = async (
+    customerDetails,
+    paymentInfo = {}
+  ) => {
     // Get currently logged-in user
     const loggedInUser =
       JSON.parse(localStorage.getItem("user"));
@@ -68,54 +68,92 @@ function Checkout() {
       return;
     }
 
-    // Create new order
-    const newOrder = {
-      id: Date.now(),
+    // Map our cart items to the shape orderController expects
+    const orderItems = cart.map((item) => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      image: item.image || "",
+    }));
 
-      // Logged-in user information
-      userId:
-        loggedInUser._id || loggedInUser.id,
-
-      userEmail: loggedInUser.email,
-
-      // Customer / delivery details
+    // Build the order payload for the backend
+    // NOTE: userId/userEmail are no longer sent here —
+    // the backend now derives them from the JWT (req.user)
+    const orderPayload = {
       customer: customerDetails,
-
-      // Cart items
-      items: cart,
-
-      // Total amount
+      items: orderItems,
       total: totalAmount,
-
-      // Order date
-      date: new Date().toLocaleString(),
-
-      // Order status
-      status: "Confirmed",
+      paymentStatus:
+        paymentInfo.paymentStatus ||
+        (customerDetails.payment === "Cash on Delivery"
+          ? "COD"
+          : "Pending"),
+      paymentId: paymentInfo.paymentId || "",
+      razorpayOrderId: paymentInfo.razorpayOrderId || "",
     };
 
-    // Add new order
-    const updatedOrders = [
-      ...existingOrders,
-      newOrder,
-    ];
+    // Backend now requires a valid JWT for order creation
+    const token = localStorage.getItem("token");
 
-    // Save orders
-    localStorage.setItem(
-      "orders",
-      JSON.stringify(updatedOrders)
-    );
+    if (!token) {
+      toast.error(
+        "Your session has expired. Please login again."
+      );
+      navigate("/login");
+      return;
+    }
 
-    // Clear cart
-    setCart([]);
+    try {
+      const response = await fetch(
+        "https://foodexpress-backend-p9dv.onrender.com/api/orders",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(orderPayload),
+        }
+      );
 
-    localStorage.removeItem("cart");
+      const data = await response.json();
 
-    // Success message
-    toast.success("Order placed successfully 🎉");
+      if (!response.ok || !data.success) {
+        console.error(
+          "❌ Create Order Failed:",
+          data
+        );
 
-    // Go to success page
-    navigate("/order-success");
+        toast.error(
+          data.message ||
+            "Failed to save your order. Please try again."
+        );
+
+        return;
+      }
+
+      console.log("✅ Order saved to backend:", data.order);
+
+      // Clear cart only after the order is confirmed saved
+      setCart([]);
+      localStorage.removeItem("cart");
+
+      // Success message
+      toast.success("Order placed successfully 🎉");
+
+      // Go to success page
+      navigate("/order-success");
+    } catch (error) {
+      console.error(
+        "❌ Place Order Error:",
+        error
+      );
+
+      toast.error(
+        "Could not connect to server to place your order"
+      );
+    }
   };
 
   // =====================================================
@@ -137,7 +175,9 @@ function Checkout() {
       }
 
       // Directly create order
-      handlePlaceOrder(customerDetails);
+      handlePlaceOrder(customerDetails, {
+        paymentStatus: "COD",
+      });
 
       return;
     }
@@ -444,9 +484,13 @@ function Checkout() {
               "✅ Payment verified successfully"
             );
 
-            handlePlaceOrder(
-              customerDetails
-            );
+            handlePlaceOrder(customerDetails, {
+              paymentStatus: "Paid",
+              paymentId:
+                paymentResponse.razorpay_payment_id,
+              razorpayOrderId:
+                paymentResponse.razorpay_order_id,
+            });
           } catch (error) {
             console.error(
               "❌ PAYMENT VERIFICATION ERROR:",
