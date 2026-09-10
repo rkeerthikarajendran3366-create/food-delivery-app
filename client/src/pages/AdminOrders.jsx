@@ -52,7 +52,13 @@ function AdminOrders() {
         }
       );
 
+
       const data = await response.json();
+
+
+      console.log("ADMIN ORDERS STATUS:", response.status);
+      console.log("ADMIN ORDERS RESPONSE:", data);
+      console.log("ADMIN ORDERS COUNT:", data.orders?.length);
 
       if (!response.ok || !data.success) {
         console.error(
@@ -69,6 +75,7 @@ function AdminOrders() {
       }
 
       setOrders(data.orders || []);
+      console.log("ORDERS STATE DATA:", data.orders);
     } catch (error) {
       console.error(
         "❌ Load Orders Error:",
@@ -128,7 +135,7 @@ function AdminOrders() {
 
         toast.error(
           data.message ||
-            "Failed to update order status"
+          "Failed to update order status"
         );
 
         return;
@@ -159,6 +166,8 @@ function AdminOrders() {
       setUpdatingId(null);
     }
   };
+
+  console.log("RENDERING ORDERS:", orders);
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6">
@@ -365,8 +374,8 @@ function AdminOrders() {
                       📅{" "}
                       {order.createdAt
                         ? new Date(
-                            order.createdAt
-                          ).toLocaleString()
+                          order.createdAt
+                        ).toLocaleString()
                         : "N/A"}
                     </p>
                   </div>
@@ -381,11 +390,10 @@ function AdminOrders() {
                         rounded-full
                         font-semibold
                         text-sm
-                        ${
-                          STATUS_COLORS[
-                            order.status
-                          ] ||
-                          "bg-gray-100 text-gray-700"
+                        ${STATUS_COLORS[
+                        order.status
+                        ] ||
+                        "bg-gray-100 text-gray-700"
                         }
                       `}
                     >

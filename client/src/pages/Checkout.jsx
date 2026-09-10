@@ -37,7 +37,7 @@ function Checkout() {
     // Strip leading "91" if user included the country code
     const withoutCountryCode =
       digitsOnly.length === 12 &&
-      digitsOnly.startsWith("91")
+        digitsOnly.startsWith("91")
         ? digitsOnly.slice(2)
         : digitsOnly;
 
@@ -127,7 +127,7 @@ function Checkout() {
 
         toast.error(
           data.message ||
-            "Failed to save your order. Please try again."
+          "Failed to save your order. Please try again."
         );
 
         return;
@@ -268,15 +268,22 @@ function Checkout() {
       // Create Razorpay order from backend
       // -------------------------------------------------
 
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        toast.error("Please login again");
+        navigate("/login");
+        return;
+      }
+
       const response = await fetch(
         "https://foodexpress-backend-p9dv.onrender.com/api/payment/create-order",
         {
           method: "POST",
-
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-
           body: JSON.stringify({
             amount: totalAmount,
           }),
@@ -329,7 +336,7 @@ function Checkout() {
 
         toast.error(
           data.message ||
-            "Unable to create payment"
+          "Unable to create payment"
         );
 
         return;
@@ -395,29 +402,36 @@ function Checkout() {
             // Verify payment with backend
             // --------------------------------------------
 
-            const verifyResponse =
-              await fetch(
-                "https://foodexpress-backend-p9dv.onrender.com/api/payment/verify-payment",
-                {
-                  method: "POST",
+            const token = localStorage.getItem("token");
 
-                  headers: {
-                    "Content-Type":
-                      "application/json",
-                  },
+            if (!token) {
+              toast.error("Please login again");
+              navigate("/login");
+              return;
+            }
 
-                  body: JSON.stringify({
-                    razorpay_order_id:
-                      paymentResponse.razorpay_order_id,
+            const verifyResponse = await fetch(
+              "https://foodexpress-backend-p9dv.onrender.com/api/payment/verify-payment",
+              {
+                method: "POST",
 
-                    razorpay_payment_id:
-                      paymentResponse.razorpay_payment_id,
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
 
-                    razorpay_signature:
-                      paymentResponse.razorpay_signature,
-                  }),
-                }
-              );
+                body: JSON.stringify({
+                  razorpay_order_id:
+                    paymentResponse.razorpay_order_id,
+
+                  razorpay_payment_id:
+                    paymentResponse.razorpay_payment_id,
+
+                  razorpay_signature:
+                    paymentResponse.razorpay_signature,
+                }),
+              }
+            );
 
             // --------------------------------------------
             // Read verification response
@@ -469,7 +483,7 @@ function Checkout() {
 
               toast.error(
                 verifyData.message ||
-                  "Payment verification failed"
+                "Payment verification failed"
               );
 
               return;
@@ -504,7 +518,7 @@ function Checkout() {
 
             toast.error(
               error?.message ||
-                "Payment verification failed"
+              "Payment verification failed"
             );
           }
         },
@@ -600,7 +614,7 @@ function Checkout() {
 
           toast.error(
             response.error?.description ||
-              "Payment failed"
+            "Payment failed"
           );
         }
       );
@@ -632,7 +646,7 @@ function Checkout() {
 
       toast.error(
         error?.message ||
-          "Something went wrong with payment"
+        "Something went wrong with payment"
       );
     }
   };

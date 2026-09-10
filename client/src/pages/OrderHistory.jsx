@@ -13,6 +13,10 @@ function OrderHistory() {
 
   const currentUserId = user?._id || user?.id;
 
+  console.log("ORDER HISTORY USER:", user);
+  console.log("ORDER HISTORY USER ID:", currentUserId);
+  console.log("ORDER HISTORY TOKEN:", !!localStorage.getItem("token"));
+
   // =====================================================
   // LOAD ORDERS FROM BACKEND
   // =====================================================
@@ -30,6 +34,11 @@ function OrderHistory() {
 
         const token = localStorage.getItem("token");
 
+        console.log(
+          "ORDER HISTORY API:",
+          `${BACKEND_URL}/api/orders/${currentUserId}`
+        );
+
         const response = await fetch(
           `${BACKEND_URL}/api/orders/${currentUserId}`,
           {
@@ -42,6 +51,9 @@ function OrderHistory() {
         );
 
         const data = await response.json();
+
+        console.log("ORDER HISTORY STATUS:", response.status);
+        console.log("ORDER HISTORY RESPONSE:", data);
 
         if (!response.ok || !data.success) {
           console.error(
@@ -58,6 +70,9 @@ function OrderHistory() {
         }
 
         // Backend already returns newest first (sorted by createdAt)
+        console.log("ORDERS RECEIVED BY UI:", data.orders);
+        console.log("STATE SET WITH ORDERS:", data.orders.length);
+
         setOrders(data.orders || []);
       } catch (error) {
         console.error(
@@ -274,8 +289,8 @@ function OrderHistory() {
                         📅{" "}
                         {order.createdAt
                           ? new Date(
-                              order.createdAt
-                            ).toLocaleString()
+                            order.createdAt
+                          ).toLocaleString()
                           : "N/A"}
                       </p>
                     </div>
@@ -339,15 +354,14 @@ function OrderHistory() {
                               flex
                               items-center
                               justify-center
-                              ${
-                                [
-                                  "Confirmed",
-                                  "Preparing",
-                                  "Out for Delivery",
-                                  "Delivered",
-                                ].includes(status)
-                                  ? "bg-green-500 text-white"
-                                  : "bg-gray-300 text-gray-600"
+                              ${[
+                                "Confirmed",
+                                "Preparing",
+                                "Out for Delivery",
+                                "Delivered",
+                              ].includes(status)
+                                ? "bg-green-500 text-white"
+                                : "bg-gray-300 text-gray-600"
                               }
                             `}
                           >
@@ -377,14 +391,13 @@ function OrderHistory() {
                               flex
                               items-center
                               justify-center
-                              ${
-                                [
-                                  "Preparing",
-                                  "Out for Delivery",
-                                  "Delivered",
-                                ].includes(status)
-                                  ? "bg-green-500 text-white"
-                                  : "bg-gray-300 text-gray-600"
+                              ${[
+                                "Preparing",
+                                "Out for Delivery",
+                                "Delivered",
+                              ].includes(status)
+                                ? "bg-green-500 text-white"
+                                : "bg-gray-300 text-gray-600"
                               }
                             `}
                           >
@@ -414,13 +427,12 @@ function OrderHistory() {
                               flex
                               items-center
                               justify-center
-                              ${
-                                [
-                                  "Out for Delivery",
-                                  "Delivered",
-                                ].includes(status)
-                                  ? "bg-green-500 text-white"
-                                  : "bg-gray-300 text-gray-600"
+                              ${[
+                                "Out for Delivery",
+                                "Delivered",
+                              ].includes(status)
+                                ? "bg-green-500 text-white"
+                                : "bg-gray-300 text-gray-600"
                               }
                             `}
                           >
@@ -450,10 +462,9 @@ function OrderHistory() {
                               flex
                               items-center
                               justify-center
-                              ${
-                                status === "Delivered"
-                                  ? "bg-green-500 text-white"
-                                  : "bg-gray-300 text-gray-600"
+                              ${status === "Delivered"
+                                ? "bg-green-500 text-white"
+                                : "bg-gray-300 text-gray-600"
                               }
                             `}
                           >
