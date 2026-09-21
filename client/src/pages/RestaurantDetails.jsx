@@ -20,9 +20,33 @@ function RestaurantDetails() {
     removeItem,
   } = useContext(CartContext);
 
+  // ================================
+  // GET CURRENT USER
+  // ================================
+
+  const userData = localStorage.getItem("user");
+
+  let user = null;
+
+  try {
+    user = userData ? JSON.parse(userData) : null;
+  } catch (error) {
+    console.error("User data parsing error:", error);
+  }
+
+  const isAdmin = user?.role === "admin";
+
+  // ================================
+  // FIND RESTAURANT
+  // ================================
+
   const restaurant = restaurants.find(
     (restaurant) => restaurant.id === Number(id)
   );
+
+  // ================================
+  // REVIEWS
+  // ================================
 
   const [reviews, setReviews] = useState(() => {
     const savedReviews =
@@ -54,6 +78,10 @@ function RestaurantDetails() {
       "Review added successfully ⭐"
     );
   };
+
+  // ================================
+  // RESTAURANT NOT FOUND
+  // ================================
 
   if (!restaurant) {
     return (
@@ -97,10 +125,18 @@ function RestaurantDetails() {
     );
   }
 
+  // ================================
+  // RESTAURANT REVIEWS
+  // ================================
+
   const restaurantReviews = reviews.filter(
     (review) =>
       review.restaurantId === restaurant.id
   );
+
+  // ================================
+  // GET CART ITEM
+  // ================================
 
   const getCartItem = (itemId) => {
     return cart.find(
@@ -109,7 +145,16 @@ function RestaurantDetails() {
     );
   };
 
+  // ================================
+  // ADD TO CART
+  // USER ONLY
+  // ================================
+
   const handleAddCart = (item) => {
+    if (isAdmin) {
+      return;
+    }
+
     addToCart(item);
 
     toast.success(
@@ -120,15 +165,42 @@ function RestaurantDetails() {
     );
   };
 
+  // ================================
+  // INCREASE QUANTITY
+  // USER ONLY
+  // ================================
+
   const handleIncrease = (itemId) => {
+    if (isAdmin) {
+      return;
+    }
+
     increaseQuantity(itemId);
   };
 
+  // ================================
+  // DECREASE QUANTITY
+  // USER ONLY
+  // ================================
+
   const handleDecrease = (itemId) => {
+    if (isAdmin) {
+      return;
+    }
+
     decreaseQuantity(itemId);
   };
 
+  // ================================
+  // REMOVE FROM CART
+  // USER ONLY
+  // ================================
+
   const handleRemove = (itemId) => {
+    if (isAdmin) {
+      return;
+    }
+
     removeItem(itemId);
 
     toast.success(
@@ -150,7 +222,9 @@ function RestaurantDetails() {
         dark:bg-gray-900
       "
     >
-      {/* Back */}
+      {/* ================================
+          BACK
+      ================================= */}
 
       <Link
         to="/restaurants"
@@ -168,7 +242,9 @@ function RestaurantDetails() {
         ← Back
       </Link>
 
-      {/* Restaurant Image */}
+      {/* ================================
+          RESTAURANT IMAGE
+      ================================= */}
 
       <img
         src={restaurant.image}
@@ -182,7 +258,9 @@ function RestaurantDetails() {
         "
       />
 
-      {/* Restaurant Name */}
+      {/* ================================
+          RESTAURANT NAME
+      ================================= */}
 
       <h1
         className="
@@ -196,7 +274,9 @@ function RestaurantDetails() {
         {restaurant.name}
       </h1>
 
-      {/* Restaurant Details */}
+      {/* ================================
+          RESTAURANT DETAILS
+      ================================= */}
 
       <p
         className="
@@ -248,7 +328,9 @@ function RestaurantDetails() {
         💰 {restaurant.costForTwo}
       </p>
 
-      {/* Menu */}
+      {/* ================================
+          MENU
+      ================================= */}
 
       <h2
         className="
@@ -287,7 +369,9 @@ function RestaurantDetails() {
                 transition
               "
             >
-              {/* Food Image */}
+              {/* ================================
+                  FOOD IMAGE
+              ================================= */}
 
               <img
                 src={item.image}
@@ -300,7 +384,8 @@ function RestaurantDetails() {
               />
 
               <div className="p-4">
-                {/* Food Name */}
+
+                {/* FOOD NAME */}
 
                 <h3
                   className="
@@ -313,7 +398,7 @@ function RestaurantDetails() {
                   {item.name}
                 </h3>
 
-                {/* Price */}
+                {/* PRICE */}
 
                 <p
                   className="
@@ -325,11 +410,34 @@ function RestaurantDetails() {
                   ₹{item.price}
                 </p>
 
-                {/* =========================
-                    ADD TO CART
-                ========================== */}
+                {/* ================================
+                    ADMIN VIEW
+                    NO CART ACTIONS
+                ================================= */}
 
-                {!cartItem ? (
+                {isAdmin ? (
+                  <div
+                    className="
+                      mt-4
+                      w-full
+                      text-center
+                      bg-gray-100
+                      dark:bg-gray-700
+                      text-gray-600
+                      dark:text-gray-300
+                      py-2
+                      rounded-lg
+                      font-semibold
+                    "
+                  >
+                    View Only
+                  </div>
+                ) : !cartItem ? (
+
+                  /* ================================
+                      USER - ADD TO CART
+                  ================================= */
+
                   <button
                     type="button"
                     onClick={() =>
@@ -350,8 +458,15 @@ function RestaurantDetails() {
                   >
                     Add to Cart 🛒
                   </button>
+
                 ) : (
+
+                  /* ================================
+                      USER - CART QUANTITY
+                  ================================= */
+
                   <div className="mt-4">
+
                     {/* Quantity */}
 
                     <div
@@ -362,6 +477,7 @@ function RestaurantDetails() {
                         gap-5
                       "
                     >
+
                       {/* Minus */}
 
                       <button
@@ -451,17 +567,22 @@ function RestaurantDetails() {
                     >
                       Remove from Cart 🗑️
                     </button>
+
                   </div>
                 )}
+
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Reviews */}
+      {/* ================================
+          REVIEWS
+      ================================= */}
 
       <div className="mt-12">
+
         <ReviewList
           reviews={restaurantReviews}
         />
@@ -470,6 +591,7 @@ function RestaurantDetails() {
           restaurantId={restaurant.id}
           onAddReview={addReview}
         />
+
       </div>
     </div>
   );

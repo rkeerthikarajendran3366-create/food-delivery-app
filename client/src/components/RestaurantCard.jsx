@@ -8,6 +8,20 @@ function RestaurantCard(props) {
     isWishlisted,
   } = useWishlist();
 
+  // Get logged-in user
+  const userData = localStorage.getItem("user");
+
+  let user = null;
+
+  try {
+    user = userData ? JSON.parse(userData) : null;
+  } catch (error) {
+    console.error("User data parsing error:", error);
+  }
+
+  // Check whether current user is admin
+  const isAdmin = user?.role === "admin";
+
   // Create complete restaurant object
   // including menu items
   const restaurant = {
@@ -46,7 +60,9 @@ function RestaurantCard(props) {
         transition
       "
     >
-      {/* Image Section */}
+      {/* ================================
+          IMAGE SECTION
+      ================================= */}
 
       <div className="relative">
         <img
@@ -59,30 +75,42 @@ function RestaurantCard(props) {
           "
         />
 
-        {/* Wishlist Button */}
+        {/* ================================
+            WISHLIST BUTTON
+            USER ONLY
+        ================================= */}
 
-        <button
-          onClick={handleWishlist}
-          type="button"
-          className="
-            absolute
-            top-3
-            right-3
-            bg-white
-            dark:bg-gray-700
-            rounded-full
-            p-2
-            text-2xl
-            shadow
-            hover:scale-110
-            transition
-          "
-        >
-          {favourite ? "❤️" : "🤍"}
-        </button>
+        {!isAdmin && (
+          <button
+            onClick={handleWishlist}
+            type="button"
+            aria-label={
+              favourite
+                ? "Remove from wishlist"
+                : "Add to wishlist"
+            }
+            className="
+              absolute
+              top-3
+              right-3
+              bg-white
+              dark:bg-gray-700
+              rounded-full
+              p-2
+              text-2xl
+              shadow
+              hover:scale-110
+              transition
+            "
+          >
+            {favourite ? "❤️" : "🤍"}
+          </button>
+        )}
       </div>
 
-      {/* Content */}
+      {/* ================================
+          CONTENT
+      ================================= */}
 
       <div className="p-4">
         <h2
@@ -130,9 +158,29 @@ function RestaurantCard(props) {
           {props.costForTwo}
         </p>
 
-       <Link to={`/restaurant/${props.id}`}>
-  <button>View Details</button>
-</Link>
+        {/* ================================
+            VIEW DETAILS
+            USER + ADMIN
+        ================================= */}
+
+        <Link
+          to={`/restaurant/${props.id}`}
+          className="
+            block
+            mt-4
+            w-full
+            text-center
+            bg-orange-500
+            hover:bg-orange-600
+            text-white
+            font-semibold
+            py-2
+            rounded-lg
+            transition
+          "
+        >
+          View Details
+        </Link>
       </div>
     </div>
   );

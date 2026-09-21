@@ -117,12 +117,13 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/wishlist"
           element={
             <ProtectedRoute>
-              <Wishlist />
+              <CustomerRoute>
+                <Wishlist />
+              </CustomerRoute>
             </ProtectedRoute>
           }
         />
@@ -131,11 +132,12 @@ function App() {
           path="/orders"
           element={
             <ProtectedRoute>
-              <OrderHistory />
+              <CustomerRoute>
+                <OrderHistory />
+              </CustomerRoute>
             </ProtectedRoute>
           }
         />
-
 
         {/* =========================
             ADMIN ROUTES
