@@ -3,7 +3,10 @@ const express = require("express");
 const {
   registerUser,
   loginUser,
+  registerBusiness,
   getAllUsers,
+  updateUserRole,
+  updateProfile,
 } = require("../controllers/authController");
 
 const {
@@ -13,30 +16,60 @@ const {
 
 const router = express.Router();
 
-// =====================================================
-// REGISTER
-// Public
-// =====================================================
+// --------------------------------------------------
+// NORMAL USER REGISTER / LOGIN
+// --------------------------------------------------
 
-router.post("/register", registerUser);
+router.post(
+  "/register",
+  registerUser
+);
 
-// =====================================================
-// LOGIN
-// Public
-// =====================================================
+router.post(
+  "/login",
+  loginUser
+);
 
-router.post("/login", loginUser);
+// --------------------------------------------------
+// BUSINESS / RESTAURANT OWNER REGISTRATION
+// --------------------------------------------------
 
-// =====================================================
-// GET ALL USERS
-// Admin Only
-// =====================================================
+router.post(
+  "/register-business",
+  authenticate,
+  registerBusiness
+);
+
+// --------------------------------------------------
+// USER PROFILE UPDATE
+// --------------------------------------------------
+
+router.put(
+  "/profile",
+  authenticate,
+  updateProfile
+);
+
+// --------------------------------------------------
+// ADMIN - GET ALL USERS
+// --------------------------------------------------
 
 router.get(
   "/users",
   authenticate,
   authorize("admin"),
   getAllUsers
+);
+
+// --------------------------------------------------
+// ADMIN - UPDATE USER ROLE
+// --------------------------------------------------
+
+router.put(
+  "/users/:userId/role",
+  authenticate,
+  authorize("admin"),
+  updateUserRole
 );
 
 module.exports = router;
