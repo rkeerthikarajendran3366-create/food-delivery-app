@@ -31,10 +31,19 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
 
+    // User role
     role: {
       type: String,
-      enum: ["user", "admin"],
+      enum: ["user", "admin", "restaurantOwner"],
       default: "user",
+    },
+
+    // Restaurant assigned to this restaurant owner
+    // Optional because normal users and admins do not need it.
+    restaurantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Restaurant",
+      default: null,
     },
   },
   {
