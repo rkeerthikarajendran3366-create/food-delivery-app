@@ -4,7 +4,9 @@ FoodExpress is a **full-stack MERN food delivery application** that provides a m
 
 Users can explore restaurants, search and filter food options, view restaurant menus, add food items to their cart, manage their wishlist, submit restaurant reviews, place orders, make online payments using **Razorpay**, and view their order history.
 
-The application also includes a dedicated **Admin Dashboard** with user management, restaurant/menu viewing, and customer order management.
+Restaurant owners can **register their business**, get approved by the admin, and then manage their own restaurant, **menu (with dish images)**, and **customer orders** from a dedicated **Restaurant Owner Dashboard**.
+
+The application also includes a dedicated **Admin Dashboard** with user management, restaurant/menu viewing, **business application approval**, and customer order management.
 
 ---
 
@@ -33,6 +35,9 @@ The application also includes a dedicated **Admin Dashboard** with user manageme
 - Sort restaurants by delivery time
 - Restaurant details page
 - Dynamic restaurant menu display
+- Restaurants registered through the platform are loaded from the backend database
+- Menu items added by restaurant owners appear on the restaurant details page
+- Default image shown when a dish has no image
 - Food item selection
 - Restaurant reviews
 
@@ -109,14 +114,122 @@ Cart Badge = 5
 
 - User registration
 - User login
-- JWT authentication
+- JWT authentication (7-day token)
 - Protected routes
 - Customer-only routes
 - User profile page
+- Profile update (name, phone, address)
 - Secure password hashing using bcryptjs
 - Authentication state management
 - Logout functionality
 - User information management
+- Role-based access: `user`, `restaurantOwner`, `admin`
+
+---
+
+## 🏪 Business Registration (Restaurant Owner Onboarding)
+
+Any logged-in customer can apply to become a restaurant owner.
+
+Customers can:
+
+- Submit a business registration application
+- Provide business name, owner name, email, and phone
+- Provide restaurant name and cuisine
+- Provide address and city
+- Provide restaurant description
+- Provide opening and closing time
+- View the status of their application (pending, approved, rejected)
+
+Validation and safety:
+
+- Required fields are validated on the server
+- Only normal users can submit an application
+- A user cannot submit a second application while one is pending
+- Email is normalized before saving
+
+### Onboarding Flow
+
+```text
+Customer
+   ↓
+Business Registration Form
+   ↓
+Application Status: Pending
+   ↓
+Admin Reviews Application
+   ↓
+Approve ───────────────► Restaurant is created
+   │                      User role becomes restaurantOwner
+   │                      Restaurant is linked to the owner
+   ↓
+Reject (with reason)
+```
+
+---
+
+## 🧑‍🍳 Restaurant Owner Dashboard
+
+Approved restaurant owners get a dedicated dashboard.
+
+### Restaurant Management
+
+Owners can:
+
+- View their restaurant details
+- Edit restaurant name
+- Edit cuisine
+- Edit delivery time
+- Edit rating
+- Edit description
+- Upload a restaurant image from their device, or paste an image URL
+- See a live preview of the restaurant image
+
+### Menu Management
+
+Owners can:
+
+- Add dishes with name, price, and image
+- Upload a dish image from their device, or paste an image URL
+- See a preview of the dish image before saving
+- View all dishes in their menu
+- Remove dishes from the menu
+- Dishes appear on the customer-facing restaurant details page
+- Existing dish IDs are preserved when the menu is updated, so customer carts keep working
+- Invalid dishes (empty name or price of zero) are rejected by the server
+
+### Order Management
+
+Owners can:
+
+- View total orders for their restaurant
+- View customer name, phone, and delivery address
+- View ordered items, quantities, and prices
+- View total order amount
+- Update order status
+
+Available order statuses:
+
+```text
+Confirmed
+Preparing
+Out for Delivery
+Delivered
+Cancelled
+```
+
+### Image Upload
+
+- Images are selected from the owner's device
+- Images are resized and compressed in the browser before upload
+- Compressed images are stored with the restaurant record in MongoDB
+- The backend accepts request bodies up to 10 MB
+
+### Owner Security
+
+- Owner-only routes
+- Each owner can only update their own restaurant
+- Restaurant ownership is verified on the server
 
 ---
 
@@ -135,6 +248,8 @@ Admin Dashboard
 │
 ├── 🍔 Restaurants
 │
+├── 🏪 Business Applications
+│
 └── 📦 Orders
 ```
 
@@ -147,6 +262,9 @@ Admin can:
 - View user email
 - View user phone
 - View user role
+- Assign the Restaurant Owner role to a user (linked to a restaurant)
+- Remove the Restaurant Owner role
+- Prevent one restaurant from being assigned to two owners
 - Refresh user list
 - View total registered users
 
@@ -163,6 +281,23 @@ Admin can:
 - View cost for two
 - View restaurant menu items
 - View menu item prices
+- View restaurant statistics (total restaurants, restaurants with owners)
+
+### 🏪 Admin Business Applications
+
+Admin can:
+
+- View all business applications
+- View applicant details (name, email, phone, role)
+- View restaurant name, cuisine, address, and description
+- View application status
+- **Approve** an application
+  - Creates the restaurant
+  - Changes the applicant's role to `restaurantOwner`
+  - Links the restaurant to the user
+  - Records the review date
+- **Reject** an application with a reason
+- Already approved applications cannot be approved again (prevents duplicate restaurants)
 
 ### 📦 Admin Orders
 
@@ -384,9 +519,12 @@ food-delivery-app
 │   │   │   ├── Register.jsx
 │   │   │   ├── Profile.jsx
 │   │   │   ├── Wishlist.jsx
+│   │   │   ├── BusinessRegistration.jsx
+│   │   │   ├── RestaurantOwnerDashboard.jsx
 │   │   │   ├── AdminDashboard.jsx
 │   │   │   ├── AdminUsers.jsx
 │   │   │   ├── AdminRestaurants.jsx
+│   │   │   ├── AdminBusinessApplications.jsx
 │   │   │   ├── AdminOrders.jsx
 │   │   │   └── NotFound.jsx
 │   │   │
@@ -414,17 +552,23 @@ food-delivery-app
 │   ├── controllers
 │   │   ├── authController.js
 │   │   ├── restaurantController.js
+│   │   ├── businessApplicationController.js
 │   │   ├── paymentController.js
 │   │   └── orderController.js
+│   │
+│   ├── middleware
+│   │   └── authMiddleware.js
 │   │
 │   ├── models
 │   │   ├── User.js
 │   │   ├── Restaurant.js
+│   │   ├── BusinessApplication.js
 │   │   └── Order.js
 │   │
 │   ├── routes
 │   │   ├── authRoutes.js
 │   │   ├── restaurantRoutes.js
+│   │   ├── businessApplicationRoutes.js
 │   │   ├── paymentRoutes.js
 │   │   └── orderRoutes.js
 │   │
@@ -437,6 +581,58 @@ food-delivery-app
 ├── netlify.toml
 ├── package.json
 └── README.md
+```
+
+---
+
+# 🗄️ Data Models
+
+## Restaurant
+
+```text
+name           String (required)
+cuisine        String (required)
+image          String (URL or uploaded image data, required)
+rating         Number (default 4.5)
+deliveryTime   String (required)
+description    String
+location       String
+costForTwo     String
+ownerId        User reference (null when no owner)
+menu           List of dishes
+  ├── id       String (auto-generated)
+  ├── name     String (required)
+  ├── price    Number (required)
+  └── image    String
+createdAt / updatedAt
+```
+
+## Business Application
+
+```text
+userId            User reference
+businessName
+ownerName
+email
+phone
+restaurantName
+cuisine
+address
+city
+description
+openingTime
+closingTime
+status            pending | approved | rejected
+rejectionReason
+reviewedAt
+```
+
+## User Roles
+
+```text
+user              Normal customer
+restaurantOwner   Approved restaurant owner (linked to one restaurant)
+admin             Platform administrator
 ```
 
 ---
@@ -590,6 +786,8 @@ GET /api/auth/users
 
 > Admin authentication is required to access the users endpoint.
 
+Additional authentication routes (in `authRoutes.js`) handle business registration, restaurant owner role assignment, and profile update.
+
 ## Restaurants
 
 ### Get All Restaurants
@@ -603,6 +801,53 @@ GET /api/restaurants
 ```text
 GET /api/restaurants/:id
 ```
+
+### Create Restaurant
+
+```text
+POST /api/restaurants
+```
+
+> Admin authentication is required.
+
+### Restaurant Statistics
+
+```text
+GET /api/restaurants/stats
+```
+
+> Admin authentication is required.
+
+### Get My Restaurant (Owner)
+
+```text
+GET /api/restaurants/owner/my-restaurant
+```
+
+> Restaurant owner authentication is required.
+
+### Update My Restaurant and Menu (Owner)
+
+```text
+PUT /api/restaurants/owner/my-restaurant
+```
+
+> Restaurant owner authentication is required. Updatable fields: name, cuisine, image, rating, deliveryTime, description, location, costForTwo, menu.
+
+## Business Applications
+
+All business application routes are under:
+
+```text
+/api/business-applications
+```
+
+- Customer: view own application
+- Admin: view all applications
+- Admin: approve an application
+- Admin: reject an application with a reason
+
+> Admin authentication is required for admin routes.
 
 ## Orders
 
@@ -625,6 +870,22 @@ GET /api/orders/admin
 ```
 
 > Admin authentication is required for the admin orders endpoint.
+
+### Get Restaurant Owner Orders
+
+```text
+GET /api/orders/owner
+```
+
+> Restaurant owner authentication is required.
+
+### Update Order Status
+
+```text
+PUT /api/orders/:id/status
+```
+
+> Restaurant owner authentication is required.
 
 ## Payments
 
@@ -723,6 +984,10 @@ The application follows basic security practices including:
 - Protected frontend routes
 - Customer route protection
 - Admin role-based route protection
+- Restaurant owner role-based route protection
+- Owners can only modify their own restaurant
+- Duplicate approval protection for business applications
+- Server-side validation of business applications and menu items
 - Environment variables for sensitive configuration
 - Razorpay Key Secret stored only on the backend
 - Server-side Razorpay order creation
@@ -771,19 +1036,31 @@ The major mentor feedback items have been addressed.
 
 ---
 
+# 🐞 Bug Fixes (Restaurant Onboarding)
+
+- ✅ Fixed duplicate restaurants being created for a single approved hotel
+- ✅ Fixed "Restaurant Not Found" on View Details for backend-registered restaurants
+- ✅ Restaurant details page now loads restaurants from the backend when they are not in the built-in list
+- ✅ Added loading state on the restaurant details page
+- ✅ Approving an already approved application is blocked
+- ✅ Menu items keep their IDs across updates, so customer carts are not broken
+
+---
+
 # 🔮 Future Enhancements
 
 Possible future improvements include:
 
 - 📍 Live order tracking
-- 🏪 Restaurant owner dashboard
-- ☁️ Cloud image storage
 - 🔄 Real-time order updates
+- ☁️ Cloud image storage (for example Cloudinary) for faster image loading
+- ✏️ Edit existing dishes in the owner dashboard
 - 🚴 Delivery partner module
 - 🔔 Order notifications
 - ⚙️ Advanced admin management
 - 🍽️ Restaurant management from admin dashboard
 - 📊 Admin analytics and statistics
+- 📈 Owner sales analytics
 
 ---
 
@@ -823,6 +1100,13 @@ FoodExpress - MERN Full Stack Food Delivery Application
 | Admin Restaurants | ✅ Completed |
 | Admin Menu Display | ✅ Completed |
 | Admin Orders | ✅ Completed |
+| Business Registration | ✅ Completed |
+| Admin Business Application Approval | ✅ Completed |
+| Restaurant Owner Role | ✅ Completed |
+| Restaurant Owner Dashboard | ✅ Completed |
+| Owner Menu Management | ✅ Completed |
+| Restaurant and Dish Image Upload | ✅ Completed |
+| Owner Order Status Management | ✅ Completed |
 | Protected Routes | ✅ Completed |
 | Customer Route Protection | ✅ Completed |
 | Responsive UI | ✅ Completed |
@@ -836,7 +1120,7 @@ FoodExpress - MERN Full Stack Food Delivery Application
 
 # 🎉 Conclusion
 
-FoodExpress is a complete MERN Stack Food Delivery Application demonstrating modern frontend development, backend REST API development, database integration, authentication, authorization, cart and order management, wishlist and review functionality, Razorpay payment integration, admin management, and cloud deployment.
+FoodExpress is a complete MERN Stack Food Delivery Application demonstrating modern frontend development, backend REST API development, database integration, authentication, authorization, cart and order management, wishlist and review functionality, Razorpay payment integration, admin management, restaurant owner onboarding, and cloud deployment.
 
 The project demonstrates the complete flow of an online food ordering application:
 
@@ -868,6 +1152,30 @@ Order Confirmation
 Order History
 ```
 
+The Restaurant Owner flow:
+
+```text
+Customer Login
+ ↓
+Business Registration
+ ↓
+Admin Approval
+ ↓
+Role becomes Restaurant Owner
+ ↓
+Owner Dashboard
+ ↓
+Edit Restaurant Details and Image
+ ↓
+Add Dishes with Images
+ ↓
+Customers See Menu
+ ↓
+Receive Orders
+ ↓
+Update Order Status
+```
+
 The Admin flow:
 
 ```text
@@ -880,6 +1188,10 @@ View Users
 View Restaurants
  ↓
 View Menus
+ ↓
+Review Business Applications
+ ↓
+Approve / Reject
  ↓
 View Customer Orders
  ↓
