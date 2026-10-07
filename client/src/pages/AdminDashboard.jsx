@@ -1,11 +1,16 @@
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 function AdminDashboard() {
-  console.log("🔥🔥🔥 ADMIN DASHBOARD IS RENDERING 🔥🔥🔥");
+  console.log(
+    "🔥🔥🔥 ADMIN DASHBOARD IS RENDERING 🔥🔥🔥"
+  );
 
   const navigate = useNavigate();
 
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user = JSON.parse(
+    localStorage.getItem("user")
+  );
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -76,14 +81,18 @@ function AdminDashboard() {
           className="
             grid
             grid-cols-1
-            md:grid-cols-3
+            md:grid-cols-2
+            lg:grid-cols-3
             gap-6
           "
         >
+
           {/* Users */}
           <button
             type="button"
-            onClick={() => navigate("/admin/users")}
+            onClick={() =>
+              navigate("/admin/users")
+            }
             className="
               w-full
               text-left
@@ -98,7 +107,9 @@ function AdminDashboard() {
               cursor-pointer
             "
           >
-            <div className="text-4xl">👥</div>
+            <div className="text-4xl">
+              👥
+            </div>
 
             <h2
               className="
@@ -143,7 +154,9 @@ function AdminDashboard() {
           {/* Restaurants */}
           <button
             type="button"
-            onClick={() => navigate("/admin/restaurants")}
+            onClick={() =>
+              navigate("/admin/restaurants")
+            }
             className="
               w-full
               text-left
@@ -158,7 +171,9 @@ function AdminDashboard() {
               cursor-pointer
             "
           >
-            <div className="text-4xl">🍔</div>
+            <div className="text-4xl">
+              🍔
+            </div>
 
             <h2
               className="
@@ -203,7 +218,9 @@ function AdminDashboard() {
           {/* Orders */}
           <button
             type="button"
-            onClick={() => navigate("/admin/orders")}
+            onClick={() =>
+              navigate("/admin/orders")
+            }
             className="
               w-full
               text-left
@@ -218,7 +235,9 @@ function AdminDashboard() {
               cursor-pointer
             "
           >
-            <div className="text-4xl">📦</div>
+            <div className="text-4xl">
+              📦
+            </div>
 
             <h2
               className="
@@ -259,6 +278,66 @@ function AdminDashboard() {
               View Orders →
             </div>
           </button>
+
+          {/* Business Applications */}
+          <Link
+            to="/admin/business-applications"
+            className="
+              block
+              bg-white
+              dark:bg-gray-800
+              rounded-xl
+              shadow-lg
+              p-6
+              hover:shadow-2xl
+              hover:-translate-y-1
+              transition
+            "
+          >
+            <div className="text-4xl">
+              🏪
+            </div>
+
+            <h2
+              className="
+                text-xl
+                font-bold
+                mt-4
+                text-gray-900
+                dark:text-white
+              "
+            >
+              Business Applications
+            </h2>
+
+            <p
+              className="
+                mt-2
+                text-gray-600
+                dark:text-gray-300
+              "
+            >
+              Review and approve restaurant owners.
+            </p>
+
+            <div
+              className="
+                mt-4
+                inline-block
+                bg-orange-500
+                hover:bg-orange-600
+                text-white
+                px-4
+                py-2
+                rounded-lg
+                text-sm
+                font-semibold
+              "
+            >
+              View Applications →
+            </div>
+          </Link>
+
         </div>
 
         {/* Admin Information */}

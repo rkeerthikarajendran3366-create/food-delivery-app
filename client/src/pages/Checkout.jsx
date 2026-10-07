@@ -5,39 +5,27 @@ import CheckoutForm from "../components/CheckoutForm";
 
 function Checkout() {
   const { cart, setCart } = useCart();
-
   const navigate = useNavigate();
-
-  // =====================================================
-  // CALCULATE TOTAL AMOUNT
-  // =====================================================
 
   const totalAmount = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
 
-  // =====================================================
-  // CLEAN + VALIDATE PHONE NUMBER
-  // =====================================================
-  // Razorpay's contact-details screen needs a plain 10-digit
-  // Indian mobile number (no +91, spaces, or dashes).
-  // If we pass something invalid/empty in `prefill.contact`,
-  // Razorpay shows its own "Enter mobile number" screen and
-  // blocks Continue until a valid one is typed.
+  // --------------------------------------------------
+  // PHONE HELPERS
+  // --------------------------------------------------
 
   const getCleanPhone = (rawPhone) => {
     if (!rawPhone) return "";
 
-    // Remove +91, spaces, dashes, brackets — keep digits only
     const digitsOnly = rawPhone
       .toString()
       .replace(/\D/g, "");
 
-    // Strip leading "91" if user included the country code
     const withoutCountryCode =
       digitsOnly.length === 12 &&
-        digitsOnly.startsWith("91")
+      digitsOnly.startsWith("91")
         ? digitsOnly.slice(2)
         : digitsOnly;
 
@@ -45,61 +33,167 @@ function Checkout() {
   };
 
   const isValidIndianMobile = (phone) => {
-    // Indian mobile numbers: 10 digits, starts with 6-9
     return /^[6-9]\d{9}$/.test(phone);
   };
 
-  // =====================================================
-  // CREATE FOOD ORDER
-  // =====================================================
+  // --------------------------------------------------
+  // GET RESTAURANT ID FROM CART
+  // --------------------------------------------------
+
+  const getRestaurantIdFromCart = () => {
+    if (!cart || cart.length === 0) {
+      return null;
+    }
+
+    /*
+      New owner-created restaurants will store restaurantId
+      inside cart items.
+
+      Existing local restaurants may not have restaurantId.
+      In that case we return null so old orders continue
+      working exactly as before.
+    */
+
+    const restaurantIds = cart
+      .map((item) => item.restaurantId)
+      .filter(Boolean);
+
+    if (restaurantIds.length === 0) {
+      return null;
+    }
+
+    // Remove duplicate restaurant IDs
+    const uniqueRestaurantIds = [
+      ...new Set(
+        restaurantIds.map((id) => String(id))
+      ),
+    ];
+
+    /*
+      Existing application works with one checkout/order.
+
+      If cart contains items from multiple restaurants,
+      we stop the order rather than assigning the complete
+      order to the wrong restaurant owner.
+    */
+
+    if (uniqueRestaurantIds.length > 1) {
+      return "MULTIPLE_RESTAURANTS";
+    }
+
+    return uniqueRestaurantIds[0];
+  };
+
+  // --------------------------------------------------
+  // PLACE ORDER
+  // --------------------------------------------------
 
   const handlePlaceOrder = async (
     customerDetails,
     paymentInfo = {}
   ) => {
-    // Get currently logged-in user
     const loggedInUser =
       JSON.parse(localStorage.getItem("user"));
 
-    // User must be logged in
     if (!loggedInUser) {
-      toast.error("Please login before placing an order");
+      toast.error(
+        "Please login before placing an order"
+      );
+
       navigate("/login");
       return;
     }
 
-    // Map our cart items to the shape orderController expects
+    if (!cart.length) {
+      toast.error("Your cart is empty");
+      return;
+    }
+
+    // -----------------------------------------------
+    // FIND RESTAURANT
+    // -----------------------------------------------
+
+    const restaurantId =
+      getRestaurantIdFromCart();
+
+    if (
+      restaurantId ===
+      "MULTIPLE_RESTAURANTS"
+    ) {
+      toast.error(
+        "Please order from one restaurant at a time."
+      );
+
+      return;
+    }
+
+    // -----------------------------------------------
+    // PREPARE ORDER ITEMS
+    // -----------------------------------------------
+
     const orderItems = cart.map((item) => ({
       id: item.id,
       name: item.name,
       price: item.price,
       quantity: item.quantity,
       image: item.image || "",
+
+      // New field.
+      // Existing local items will simply have null.
+      restaurantId:
+        item.restaurantId || null,
     }));
 
-    // Build the order payload for the backend
-    // NOTE: userId/userEmail are no longer sent here —
-    // the backend now derives them from the JWT (req.user)
+    // -----------------------------------------------
+    // ORDER PAYLOAD
+    // -----------------------------------------------
+
     const orderPayload = {
       customer: customerDetails,
+
       items: orderItems,
+
       total: totalAmount,
+
+      /*
+        New owner restaurant support.
+
+        Existing local restaurants:
+        restaurantId = null
+
+        Owner-created restaurants:
+        restaurantId = MongoDB restaurant ID
+      */
+      restaurantId:
+        restaurantId || null,
+
       paymentStatus:
         paymentInfo.paymentStatus ||
-        (customerDetails.payment === "Cash on Delivery"
+        (customerDetails.payment ===
+        "Cash on Delivery"
           ? "COD"
           : "Pending"),
-      paymentId: paymentInfo.paymentId || "",
-      razorpayOrderId: paymentInfo.razorpayOrderId || "",
+
+      paymentId:
+        paymentInfo.paymentId || "",
+
+      razorpayOrderId:
+        paymentInfo.razorpayOrderId || "",
     };
 
-    // Backend now requires a valid JWT for order creation
-    const token = localStorage.getItem("token");
+    console.log(
+      "📦 Order Payload:",
+      orderPayload
+    );
+
+    const token =
+      localStorage.getItem("token");
 
     if (!token) {
       toast.error(
         "Your session has expired. Please login again."
       );
+
       navigate("/login");
       return;
     }
@@ -109,15 +203,20 @@ function Checkout() {
         "https://foodexpress-backend-p9dv.onrender.com/api/orders",
         {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(orderPayload),
+
+          body: JSON.stringify(
+            orderPayload
+          ),
         }
       );
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       if (!response.ok || !data.success) {
         console.error(
@@ -127,22 +226,29 @@ function Checkout() {
 
         toast.error(
           data.message ||
-          "Failed to save your order. Please try again."
+            "Failed to save your order. Please try again."
         );
 
         return;
       }
 
-      console.log("✅ Order saved to backend:", data.order);
+      console.log(
+        "✅ Order saved to backend:",
+        data.order
+      );
 
-      // Clear cart only after the order is confirmed saved
+      // ---------------------------------------------
+      // CLEAR CART
+      // ---------------------------------------------
+
       setCart([]);
+
       localStorage.removeItem("cart");
 
-      // Success message
-      toast.success("Order placed successfully 🎉");
+      toast.success(
+        "Order placed successfully 🎉"
+      );
 
-      // Go to success page
       navigate("/order-success");
     } catch (error) {
       console.error(
@@ -156,14 +262,16 @@ function Checkout() {
     }
   };
 
-  // =====================================================
+  // --------------------------------------------------
   // PAYMENT
-  // =====================================================
+  // --------------------------------------------------
 
-  const handlePayment = async (customerDetails) => {
-    // ===================================================
-    // CASH ON DELIVERY
-    // ===================================================
+  const handlePayment = async (
+    customerDetails
+  ) => {
+    // -----------------------------------------------
+    // COD
+    // -----------------------------------------------
 
     if (
       customerDetails.payment ===
@@ -174,61 +282,77 @@ function Checkout() {
         return;
       }
 
-      // Directly create order
-      handlePlaceOrder(customerDetails, {
-        paymentStatus: "COD",
-      });
+      await handlePlaceOrder(
+        customerDetails,
+        {
+          paymentStatus: "COD",
+        }
+      );
 
       return;
     }
 
-    // ===================================================
+    // -----------------------------------------------
     // RAZORPAY
-    // ===================================================
+    // -----------------------------------------------
 
     try {
-      // -------------------------------------------------
-      // Check cart
-      // -------------------------------------------------
-
       if (!cart.length) {
         toast.error("Your cart is empty");
         return;
       }
-
-      // -------------------------------------------------
-      // Check amount
-      // -------------------------------------------------
 
       if (totalAmount < 1) {
         toast.error("Invalid order amount");
         return;
       }
 
-      // -------------------------------------------------
-      // Check + clean customer phone number
-      // -------------------------------------------------
-      // Validate BEFORE opening Razorpay so the customer
-      // fixes it on our own form instead of getting stuck
-      // on Razorpay's contact-details screen.
+      // ---------------------------------------------
+      // CHECK MULTIPLE RESTAURANTS
+      // ---------------------------------------------
 
-      const cleanPhone = getCleanPhone(
-        customerDetails?.phone
-      );
+      const restaurantId =
+        getRestaurantIdFromCart();
 
-      if (!isValidIndianMobile(cleanPhone)) {
+      if (
+        restaurantId ===
+        "MULTIPLE_RESTAURANTS"
+      ) {
         toast.error(
-          "Please enter a valid 10-digit mobile number"
+          "Please order from one restaurant at a time."
         );
+
         return;
       }
 
-      // -------------------------------------------------
-      // Check Razorpay frontend key
-      // -------------------------------------------------
+      // ---------------------------------------------
+      // PHONE
+      // ---------------------------------------------
+
+      const cleanPhone =
+        getCleanPhone(
+          customerDetails?.phone
+        );
+
+      if (
+        !isValidIndianMobile(
+          cleanPhone
+        )
+      ) {
+        toast.error(
+          "Please enter a valid 10-digit mobile number"
+        );
+
+        return;
+      }
+
+      // ---------------------------------------------
+      // RAZORPAY KEY
+      // ---------------------------------------------
 
       const razorpayKey =
-        import.meta.env.VITE_RAZORPAY_KEY_ID;
+        import.meta.env
+          .VITE_RAZORPAY_KEY_ID;
 
       console.log(
         "🔑 Razorpay Frontend Key:",
@@ -247,9 +371,9 @@ function Checkout() {
         return;
       }
 
-      // -------------------------------------------------
-      // Check Razorpay script
-      // -------------------------------------------------
+      // ---------------------------------------------
+      // RAZORPAY SCRIPT
+      // ---------------------------------------------
 
       if (!window.Razorpay) {
         console.error(
@@ -263,36 +387,46 @@ function Checkout() {
         return;
       }
 
-      // -------------------------------------------------
-      // Step 1:
-      // Create Razorpay order from backend
-      // -------------------------------------------------
+      // ---------------------------------------------
+      // TOKEN
+      // ---------------------------------------------
 
-      const token = localStorage.getItem("token");
+      const token =
+        localStorage.getItem("token");
 
       if (!token) {
-        toast.error("Please login again");
+        toast.error(
+          "Please login again"
+        );
+
         navigate("/login");
+
         return;
       }
 
-      const response = await fetch(
-        "https://foodexpress-backend-p9dv.onrender.com/api/payment/create-order",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            amount: totalAmount,
-          }),
-        }
-      );
+      // ---------------------------------------------
+      // CREATE RAZORPAY ORDER
+      // ---------------------------------------------
 
-      // -------------------------------------------------
-      // Read backend response
-      // -------------------------------------------------
+      const response =
+        await fetch(
+          "https://foodexpress-backend-p9dv.onrender.com/api/payment/create-order",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              Authorization:
+                `Bearer ${token}`,
+            },
+
+            body: JSON.stringify({
+              amount: totalAmount,
+            }),
+          }
+        );
 
       const responseText =
         await response.text();
@@ -310,7 +444,10 @@ function Checkout() {
       let data;
 
       try {
-        data = JSON.parse(responseText);
+        data =
+          JSON.parse(
+            responseText
+          );
       } catch (parseError) {
         console.error(
           "❌ Backend did not return JSON:",
@@ -324,11 +461,10 @@ function Checkout() {
         return;
       }
 
-      // -------------------------------------------------
-      // Check backend response
-      // -------------------------------------------------
-
-      if (!response.ok || !data.success) {
+      if (
+        !response.ok ||
+        !data.success
+      ) {
         console.error(
           "❌ Create order failed:",
           data
@@ -336,17 +472,16 @@ function Checkout() {
 
         toast.error(
           data.message ||
-          "Unable to create payment"
+            "Unable to create payment"
         );
 
         return;
       }
 
-      // -------------------------------------------------
-      // Check order data
-      // -------------------------------------------------
-
-      if (!data.order || !data.order.id) {
+      if (
+        !data.order ||
+        !data.order.id
+      ) {
         console.error(
           "❌ Invalid Razorpay order response:",
           data
@@ -364,235 +499,236 @@ function Checkout() {
         data.order
       );
 
-      // -------------------------------------------------
-      // Step 2:
-      // Razorpay Checkout Options
-      // -------------------------------------------------
+      // ---------------------------------------------
+      // RAZORPAY OPTIONS
+      // ---------------------------------------------
 
       const options = {
         key: razorpayKey,
 
-        amount: data.order.amount,
+        amount:
+          data.order.amount,
 
         currency:
-          data.order.currency || "INR",
+          data.order.currency ||
+          "INR",
 
         name: "FoodExpress",
 
         description:
           "Food Order Payment",
 
-        order_id: data.order.id,
+        order_id:
+          data.order.id,
 
-        // ------------------------------------------------
-        // Step 3:
-        // Payment successful
-        // ------------------------------------------------
+        // -------------------------------------------
+        // PAYMENT SUCCESS
+        // -------------------------------------------
 
-        handler: async function (
-          paymentResponse
-        ) {
-          console.log(
-            "✅ Razorpay Payment Response:",
+        handler:
+          async function (
             paymentResponse
-          );
-
-          try {
-            // --------------------------------------------
-            // Verify payment with backend
-            // --------------------------------------------
-
-            const token = localStorage.getItem("token");
-
-            if (!token) {
-              toast.error("Please login again");
-              navigate("/login");
-              return;
-            }
-
-            const verifyResponse = await fetch(
-              "https://foodexpress-backend-p9dv.onrender.com/api/payment/verify-payment",
-              {
-                method: "POST",
-
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-
-                body: JSON.stringify({
-                  razorpay_order_id:
-                    paymentResponse.razorpay_order_id,
-
-                  razorpay_payment_id:
-                    paymentResponse.razorpay_payment_id,
-
-                  razorpay_signature:
-                    paymentResponse.razorpay_signature,
-                }),
-              }
-            );
-
-            // --------------------------------------------
-            // Read verification response
-            // --------------------------------------------
-
-            const verifyText =
-              await verifyResponse.text();
-
+          ) {
             console.log(
-              "📡 Verify Payment Status:",
-              verifyResponse.status
+              "✅ Razorpay Payment Response:",
+              paymentResponse
             );
-
-            console.log(
-              "📡 Verify Payment Response:",
-              verifyText
-            );
-
-            let verifyData;
 
             try {
-              verifyData =
-                JSON.parse(verifyText);
-            } catch (parseError) {
-              console.error(
-                "❌ Verification response is not JSON:",
+              const token =
+                localStorage.getItem(
+                  "token"
+                );
+
+              if (!token) {
+                toast.error(
+                  "Please login again"
+                );
+
+                navigate("/login");
+
+                return;
+              }
+
+              // ---------------------------------------
+              // VERIFY PAYMENT
+              // ---------------------------------------
+
+              const verifyResponse =
+                await fetch(
+                  "https://foodexpress-backend-p9dv.onrender.com/api/payment/verify-payment",
+                  {
+                    method: "POST",
+
+                    headers: {
+                      "Content-Type":
+                        "application/json",
+
+                      Authorization:
+                        `Bearer ${token}`,
+                    },
+
+                    body: JSON.stringify({
+                      razorpay_order_id:
+                        paymentResponse.razorpay_order_id,
+
+                      razorpay_payment_id:
+                        paymentResponse.razorpay_payment_id,
+
+                      razorpay_signature:
+                        paymentResponse.razorpay_signature,
+                    }),
+                  }
+                );
+
+              const verifyText =
+                await verifyResponse.text();
+
+              console.log(
+                "📡 Verify Payment Status:",
+                verifyResponse.status
+              );
+
+              console.log(
+                "📡 Verify Payment Response:",
                 verifyText
               );
 
-              toast.error(
-                "Payment verification server error"
+              let verifyData;
+
+              try {
+                verifyData =
+                  JSON.parse(
+                    verifyText
+                  );
+              } catch (
+                parseError
+              ) {
+                console.error(
+                  "❌ Verification response is not JSON:",
+                  verifyText
+                );
+
+                toast.error(
+                  "Payment verification server error"
+                );
+
+                return;
+              }
+
+              if (
+                !verifyResponse.ok ||
+                !verifyData.success
+              ) {
+                console.error(
+                  "❌ Payment verification failed:",
+                  verifyData
+                );
+
+                toast.error(
+                  verifyData.message ||
+                    "Payment verification failed"
+                );
+
+                return;
+              }
+
+              console.log(
+                "✅ Payment verified successfully"
               );
 
-              return;
-            }
+              // ---------------------------------------
+              // SAVE ORDER
+              // ---------------------------------------
 
-            // --------------------------------------------
-            // Payment verification failed
-            // --------------------------------------------
+              await handlePlaceOrder(
+                customerDetails,
+                {
+                  paymentStatus:
+                    "Paid",
 
-            if (
-              !verifyResponse.ok ||
-              !verifyData.success
-            ) {
+                  paymentId:
+                    paymentResponse.razorpay_payment_id,
+
+                  razorpayOrderId:
+                    paymentResponse.razorpay_order_id,
+                }
+              );
+            } catch (error) {
               console.error(
-                "❌ Payment verification failed:",
-                verifyData
+                "❌ PAYMENT VERIFICATION ERROR:",
+                error
+              );
+
+              console.error(
+                "❌ Verification Error Message:",
+                error?.message
               );
 
               toast.error(
-                verifyData.message ||
-                "Payment verification failed"
+                error?.message ||
+                  "Payment verification failed"
               );
-
-              return;
             }
+          },
 
-            // --------------------------------------------
-            // Payment verified successfully
-            // Create food order
-            // --------------------------------------------
-
-            console.log(
-              "✅ Payment verified successfully"
-            );
-
-            handlePlaceOrder(customerDetails, {
-              paymentStatus: "Paid",
-              paymentId:
-                paymentResponse.razorpay_payment_id,
-              razorpayOrderId:
-                paymentResponse.razorpay_order_id,
-            });
-          } catch (error) {
-            console.error(
-              "❌ PAYMENT VERIFICATION ERROR:",
-              error
-            );
-
-            console.error(
-              "❌ Verification Error Message:",
-              error?.message
-            );
-
-            toast.error(
-              error?.message ||
-              "Payment verification failed"
-            );
-          }
-        },
-
-        // ------------------------------------------------
-        // Razorpay prefill
-        // ------------------------------------------------
-        // Using the cleaned, validated phone number here is
-        // what stops Razorpay's own mobile-number screen
-        // from blocking the user with its default validation.
+        // -------------------------------------------
+        // PREFILL
+        // -------------------------------------------
 
         prefill: {
           name:
-            customerDetails?.name || "",
+            customerDetails?.name ||
+            "",
 
           email:
-            customerDetails?.email || "",
+            customerDetails?.email ||
+            "",
 
-          // Razorpay requires the phone number in
-          // "+{country code}{number}" format (e.g. "+919876543210").
-          // A plain 10-digit number is NOT recognized and Razorpay
-          // silently falls back to showing its own empty
-          // "Enter mobile number" screen.
-          contact: `+91${cleanPhone}`,
+          contact:
+            `+91${cleanPhone}`,
         },
-
-        // ------------------------------------------------
-        // Razorpay notes
-        // ------------------------------------------------
 
         notes: {
           address:
-            customerDetails?.address || "",
+            customerDetails?.address ||
+            "",
         },
-
-        // ------------------------------------------------
-        // Razorpay theme
-        // ------------------------------------------------
 
         theme: {
           color: "#f97316",
         },
 
-        // ------------------------------------------------
-        // Payment modal closed
-        // ------------------------------------------------
+        // -------------------------------------------
+        // MODAL CLOSED
+        // -------------------------------------------
 
         modal: {
-          ondismiss: function () {
-            console.log(
-              "ℹ️ Razorpay payment modal closed"
-            );
+          ondismiss:
+            function () {
+              console.log(
+                "ℹ️ Razorpay payment modal closed"
+              );
 
-            toast.error(
-              "Payment cancelled"
-            );
-          },
+              toast.error(
+                "Payment cancelled"
+              );
+            },
         },
       };
-
-      // -------------------------------------------------
-      // Create Razorpay instance
-      // -------------------------------------------------
 
       console.log(
         "🚀 Opening Razorpay Checkout..."
       );
 
       const razorpay =
-        new window.Razorpay(options);
+        new window.Razorpay(
+          options
+        );
 
-      // -------------------------------------------------
-      // Razorpay payment failed
-      // -------------------------------------------------
+      // ---------------------------------------------
+      // PAYMENT FAILED
+      // ---------------------------------------------
 
       razorpay.on(
         "payment.failed",
@@ -614,21 +750,13 @@ function Checkout() {
 
           toast.error(
             response.error?.description ||
-            "Payment failed"
+              "Payment failed"
           );
         }
       );
 
-      // -------------------------------------------------
-      // Open Razorpay
-      // -------------------------------------------------
-
       razorpay.open();
     } catch (error) {
-      // =================================================
-      // MAIN PAYMENT ERROR
-      // =================================================
-
       console.error(
         "❌ PAYMENT ERROR:",
         error
@@ -646,14 +774,14 @@ function Checkout() {
 
       toast.error(
         error?.message ||
-        "Something went wrong with payment"
+          "Something went wrong with payment"
       );
     }
   };
 
-  // =====================================================
+  // --------------------------------------------------
   // UI
-  // =====================================================
+  // --------------------------------------------------
 
   return (
     <div
@@ -669,8 +797,6 @@ function Checkout() {
         p-6
       "
     >
-      {/* Page Title */}
-
       <h1
         className="
           text-4xl
@@ -682,8 +808,6 @@ function Checkout() {
       >
         Checkout 🛒
       </h1>
-
-      {/* Empty Cart */}
 
       {cart.length === 0 ? (
         <div
@@ -699,9 +823,7 @@ function Checkout() {
         </div>
       ) : (
         <>
-          {/* ============================================
-              ORDER SUMMARY
-          ============================================ */}
+          {/* ORDER SUMMARY */}
 
           <div
             className="
@@ -724,8 +846,6 @@ function Checkout() {
             >
               Order Summary
             </h2>
-
-            {/* Cart Items */}
 
             {cart.map((item) => (
               <div
@@ -753,8 +873,6 @@ function Checkout() {
 
             <hr className="dark:border-gray-600" />
 
-            {/* Total */}
-
             <h2
               className="
                 text-2xl
@@ -768,12 +886,12 @@ function Checkout() {
             </h2>
           </div>
 
-          {/* ============================================
-              CHECKOUT FORM
-          ============================================ */}
+          {/* CHECKOUT FORM */}
 
           <CheckoutForm
-            onPlaceOrder={handlePayment}
+            onPlaceOrder={
+              handlePayment
+            }
           />
         </>
       )}

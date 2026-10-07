@@ -1,455 +1,733 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 function AdminUsers() {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+    const navigate = useNavigate();
 
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      setError("");
+    const BACKEND_URL =
+        "https://foodexpress-backend-p9dv.onrender.com";
 
-      const token = localStorage.getItem("token");
+    const [users, setUsers] = useState([]);
+    const [restaurants, setRestaurants] = useState([]);
 
-      const response = await fetch(
-        "https://foodexpress-backend-p9dv.onrender.com/api/auth/users",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token && {
-              Authorization: `Bearer ${token}`,
-            }),
-          },
+    const [selectedRestaurants, setSelectedRestaurants] =
+        useState({});
+
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    const [actionLoading, setActionLoading] =
+        useState(null);
+
+    // ==========================================
+    // LOAD USERS + MONGODB RESTAURANTS
+    // ==========================================
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            setError("");
+
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                setError("Authentication token not found.");
+                return;
+            }
+
+            const headers = {
+                Authorization: `Bearer ${token}`,
+            };
+
+            // ======================================
+            // LOAD USERS
+            // ======================================
+            const usersResponse = await fetch(
+                `${BACKEND_URL}/api/auth/users`,
+                {
+                    headers,
+                }
+            );
+
+            const usersData =
+                await usersResponse.json();
+
+            if (!usersResponse.ok) {
+                throw new Error(
+                    usersData.message ||
+                    "Failed to load users"
+                );
+            }
+
+            // ======================================
+            // LOAD RESTAURANTS FROM MONGODB
+            // ======================================
+            const restaurantsResponse = await fetch(
+                `${BACKEND_URL}/api/restaurants`
+            );
+
+            const restaurantsData =
+                await restaurantsResponse.json();
+
+            if (!restaurantsResponse.ok) {
+                throw new Error(
+                    restaurantsData.message ||
+                    "Failed to load restaurants"
+                );
+            }
+
+            setUsers(usersData.users || []);
+
+            /*
+             * Backend GET /api/restaurants
+             * currently returns the restaurant array
+             * directly.
+             */
+            setRestaurants(
+                Array.isArray(restaurantsData)
+                    ? restaurantsData
+                    : restaurantsData.restaurants || []
+            );
+
+        } catch (err) {
+            console.error(
+                "Admin Users Error:",
+                err
+            );
+
+            setError(
+                err.message ||
+                "Failed to load users"
+            );
+        } finally {
+            setLoading(false);
         }
-      );
+    };
 
-      const data = await response.json();
+    // ==========================================
+    // LOAD DATA WHEN PAGE OPENS
+    // ==========================================
+    useEffect(() => {
+        loadData();
+    }, []);
 
-      if (!response.ok || !data.success) {
-        throw new Error(
-          data.message || "Failed to load users"
+    // ==========================================
+    // RESTAURANT SELECTION
+    // ==========================================
+    const handleRestaurantChange = (
+        userId,
+        restaurantId
+    ) => {
+        setSelectedRestaurants((prev) => ({
+            ...prev,
+            [userId]: restaurantId,
+        }));
+    };
+
+    // ==========================================
+    // MAKE USER RESTAURANT OWNER
+    // ==========================================
+    const makeRestaurantOwner = async (user) => {
+        const restaurantId =
+            selectedRestaurants[user._id];
+
+        if (!restaurantId) {
+            alert(
+                "Please select a restaurant first."
+            );
+            return;
+        }
+
+        try {
+            setActionLoading(user._id);
+
+            const token =
+                localStorage.getItem("token");
+
+            if (!token) {
+                throw new Error(
+                    "Authentication token not found."
+                );
+            }
+
+            const response = await fetch(
+                `${BACKEND_URL}/api/auth/users/${user._id}/role`,
+                {
+                    method: "PUT",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+
+                        Authorization:
+                            `Bearer ${token}`,
+                    },
+
+                    body: JSON.stringify({
+                        role: "restaurantOwner",
+                        restaurantId,
+                    }),
+                }
+            );
+
+            const data =
+                await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                    "Failed to make restaurant owner"
+                );
+            }
+
+            alert(
+                "Restaurant Owner assigned successfully."
+            );
+
+            // Clear selected restaurant
+            setSelectedRestaurants((prev) => {
+                const updated = {
+                    ...prev,
+                };
+
+                delete updated[user._id];
+
+                return updated;
+            });
+
+            await loadData();
+
+        } catch (err) {
+            console.error(
+                "Make Owner Error:",
+                err
+            );
+
+            alert(
+                err.message ||
+                "Failed to assign restaurant owner."
+            );
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    // ==========================================
+    // REMOVE RESTAURANT OWNER ROLE
+    // ==========================================
+    const makeNormalUser = async (user) => {
+        const confirmed = window.confirm(
+            `Remove Restaurant Owner role from ${user.name}?`
         );
-      }
 
-      setUsers(data.users || []);
-    } catch (error) {
-      console.error("Failed to fetch users:", error);
-      setError(error.message || "Failed to load users");
-    } finally {
-      setLoading(false);
-    }
-  };
+        if (!confirmed) {
+            return;
+        }
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+        try {
+            setActionLoading(user._id);
 
-  return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6">
-      <div className="max-w-6xl mx-auto">
+            const token =
+                localStorage.getItem("token");
 
-        {/* Back Button */}
-        <Link
-          to="/admin"
-          className="
-            inline-block
-            mb-6
-            bg-orange-500
-            hover:bg-orange-600
-            text-white
-            px-5
-            py-2
-            rounded-lg
-            transition
-          "
-        >
-          ← Back to Dashboard
-        </Link>
+            if (!token) {
+                throw new Error(
+                    "Authentication token not found."
+                );
+            }
 
-        {/* Header */}
-        <div
-          className="
-            flex
-            flex-col
-            md:flex-row
-            justify-between
-            items-start
-            md:items-center
-            gap-4
-            mb-8
-          "
-        >
-          <div>
-            <h1
-              className="
-                text-4xl
-                font-bold
-                text-gray-900
-                dark:text-white
-              "
-            >
-              👥 Registered Users
-            </h1>
+            const response = await fetch(
+                `${BACKEND_URL}/api/auth/users/${user._id}/role`,
+                {
+                    method: "PUT",
 
-            <p
-              className="
-                mt-2
-                text-gray-600
-                dark:text-gray-300
-              "
-            >
-              View all registered FoodExpress users.
-            </p>
-          </div>
+                    headers: {
+                        "Content-Type":
+                            "application/json",
 
-          <button
-            type="button"
-            onClick={fetchUsers}
-            disabled={loading}
-            className="
-              bg-blue-600
-              hover:bg-blue-700
-              disabled:bg-gray-400
-              text-white
-              px-5
-              py-2
-              rounded-lg
-              transition
-            "
-          >
-            🔄 Refresh
-          </button>
-        </div>
+                        Authorization:
+                            `Bearer ${token}`,
+                    },
 
-        {/* User Count */}
-        {!loading && !error && (
-          <div
-            className="
-              mb-6
-              bg-white
-              dark:bg-gray-800
-              rounded-xl
-              shadow-lg
-              p-5
-            "
-          >
-            <p
-              className="
-                text-lg
-                font-semibold
-                text-gray-900
-                dark:text-white
-              "
-            >
-              Total Users:{" "}
-              <span className="text-orange-500">
-                {users.length}
-              </span>
-            </p>
-          </div>
-        )}
+                    body: JSON.stringify({
+                        role: "user",
+                    }),
+                }
+            );
 
-        {/* Loading */}
-        {loading && (
-          <div
-            className="
-              bg-white
-              dark:bg-gray-800
-              rounded-xl
-              shadow-lg
-              p-10
-              text-center
-            "
-          >
-            <div className="text-4xl mb-4">⏳</div>
+            const data =
+                await response.json();
 
-            <p
-              className="
-                text-gray-700
-                dark:text-gray-300
-                font-semibold
-              "
-            >
-              Loading users...
-            </p>
-          </div>
-        )}
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                    "Failed to change user role"
+                );
+            }
 
-        {/* Error */}
-        {!loading && error && (
-          <div
-            className="
-              bg-white
-              dark:bg-gray-800
-              rounded-xl
-              shadow-lg
-              p-8
-              text-center
-            "
-          >
-            <div className="text-5xl mb-4">⚠️</div>
+            alert(
+                "User role updated successfully."
+            );
 
-            <h2
-              className="
-                text-xl
-                font-bold
-                text-red-600
-                dark:text-red-400
-                mb-2
-              "
-            >
-              Failed to Load Users
-            </h2>
+            await loadData();
 
-            <p
-              className="
-                text-gray-600
-                dark:text-gray-300
-                mb-5
-              "
-            >
-              {error}
-            </p>
+        } catch (err) {
+            console.error(
+                "Remove Owner Error:",
+                err
+            );
 
-            <button
-              type="button"
-              onClick={fetchUsers}
-              className="
-                bg-orange-500
-                hover:bg-orange-600
-                text-white
-                px-5
-                py-2
-                rounded-lg
-                transition
-              "
-            >
-              Try Again
-            </button>
-          </div>
-        )}
+            alert(
+                err.message ||
+                "Failed to remove owner role."
+            );
+        } finally {
+            setActionLoading(null);
+        }
+    };
 
-        {/* No Users */}
-        {!loading && !error && users.length === 0 && (
-          <div
-            className="
-              bg-white
-              dark:bg-gray-800
-              rounded-xl
-              shadow-lg
-              p-10
-              text-center
-            "
-          >
-            <div className="text-5xl mb-4">👤</div>
+    // ==========================================
+    // ROLE LABEL
+    // ==========================================
+    const getRoleLabel = (role) => {
+        if (role === "admin") {
+            return "Admin";
+        }
 
-            <h2
-              className="
-                text-xl
-                font-bold
-                text-gray-900
-                dark:text-white
-              "
-            >
-              No Users Found
-            </h2>
+        if (role === "restaurantOwner") {
+            return "Business";
+        }
 
-            <p
-              className="
-                mt-2
-                text-gray-600
-                dark:text-gray-300
-              "
-            >
-              No registered users are available.
-            </p>
-          </div>
-        )}
+        return "User";
+    };
 
-        {/* Users Table */}
-        {!loading && !error && users.length > 0 && (
-          <div
-            className="
-              bg-white
-              dark:bg-gray-800
-              rounded-xl
-              shadow-lg
-              overflow-hidden
-            "
-          >
-            <div className="overflow-x-auto">
-              <table className="w-full">
+    // ==========================================
+    // SUMMARY
+    // ==========================================
+    const totalUsers = users.length;
 
-                <thead
-                  className="
-                    bg-gray-200
-                    dark:bg-gray-700
-                  "
-                >
-                  <tr>
-                    <th
-                      className="
-                        px-6
-                        py-4
-                        text-left
-                        font-bold
-                        text-gray-900
-                        dark:text-white
-                      "
-                    >
-                      #
-                    </th>
+    const totalOwners = users.filter(
+        (user) =>
+            user.role === "restaurantOwner"
+    ).length;
 
-                    <th
-                      className="
-                        px-6
-                        py-4
-                        text-left
-                        font-bold
-                        text-gray-900
-                        dark:text-white
-                      "
-                    >
-                      Name
-                    </th>
+    const totalAdmins = users.filter(
+        (user) =>
+            user.role === "admin"
+    ).length;
 
-                    <th
-                      className="
-                        px-6
-                        py-4
-                        text-left
-                        font-bold
-                        text-gray-900
-                        dark:text-white
-                      "
-                    >
-                      Email
-                    </th>
-
-                    <th
-                      className="
-                        px-6
-                        py-4
-                        text-left
-                        font-bold
-                        text-gray-900
-                        dark:text-white
-                      "
-                    >
-                      Phone
-                    </th>
-
-                    <th
-                      className="
-                        px-6
-                        py-4
-                        text-left
-                        font-bold
-                        text-gray-900
-                        dark:text-white
-                      "
-                    >
-                      Role
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {users.map((user, index) => (
-                    <tr
-                      key={
-                        user._id ||
-                        user.id ||
-                        index
-                      }
-                      className="
-                        border-t
-                        border-gray-200
-                        dark:border-gray-700
-                        hover:bg-gray-50
-                        dark:hover:bg-gray-750
-                        transition
-                      "
-                    >
-                      <td
-                        className="
-                          px-6
-                          py-4
-                          text-gray-700
-                          dark:text-gray-300
-                        "
-                      >
-                        {index + 1}
-                      </td>
-
-                      <td
-                        className="
-                          px-6
-                          py-4
-                          font-semibold
-                          text-gray-900
-                          dark:text-white
-                        "
-                      >
-                        {user.name || "Not available"}
-                      </td>
-
-                      <td
-                        className="
-                          px-6
-                          py-4
-                          text-gray-700
-                          dark:text-gray-300
-                        "
-                      >
-                        {user.email || "Not available"}
-                      </td>
-
-                      <td
-                        className="
-                          px-6
-                          py-4
-                          text-gray-700
-                          dark:text-gray-300
-                        "
-                      >
-                        {user.phone || "Not available"}
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <span
-                          className={`
-                            inline-block
-                            px-3
-                            py-1
-                            rounded-full
-                            text-sm
-                            font-semibold
-                            ${
-                              user.role === "admin"
-                                ? "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200"
-                                : "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200"
-                            }
-                          `}
-                        >
-                          {user.role || "user"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-
-              </table>
+    // ==========================================
+    // LOADING SCREEN
+    // ==========================================
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <p className="text-lg">
+                    Loading users...
+                </p>
             </div>
-          </div>
-        )}
+        );
+    }
 
-      </div>
-    </div>
-  );
+    // ==========================================
+    // PAGE
+    // ==========================================
+    return (
+        <div className="min-h-screen p-6">
+
+            <div className="max-w-7xl mx-auto">
+
+                {/* BACK BUTTON */}
+                <button
+                    onClick={() =>
+                        navigate("/admin")
+                    }
+                    className="mb-6 text-sm hover:underline"
+                >
+                    ← Back to Dashboard
+                </button>
+
+                {/* HEADER */}
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+
+                    <div>
+                        <h1 className="text-3xl font-bold">
+                            👥 Registered Users
+                        </h1>
+
+                        <p className="mt-2 text-gray-600 dark:text-gray-300">
+                            Manage FoodExpress users and
+                            restaurant business accounts.
+                        </p>
+                    </div>
+
+                    <button
+                        onClick={loadData}
+                        className="px-5 py-2 rounded-lg border"
+                    >
+                        🔄 Refresh
+                    </button>
+
+                </div>
+
+                {/* SUMMARY CARDS */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+
+                    <div className="p-5 rounded-xl shadow bg-white dark:bg-gray-800">
+
+                        <p className="text-sm text-gray-500">
+                            Total Users
+                        </p>
+
+                        <p className="text-3xl font-bold mt-2">
+                            {totalUsers}
+                        </p>
+
+                    </div>
+
+                    <div className="p-5 rounded-xl shadow bg-white dark:bg-gray-800">
+
+                        <p className="text-sm text-gray-500">
+                            Business Accounts
+                        </p>
+
+                        <p className="text-3xl font-bold mt-2">
+                            {totalOwners}
+                        </p>
+
+                    </div>
+
+                    <div className="p-5 rounded-xl shadow bg-white dark:bg-gray-800">
+
+                        <p className="text-sm text-gray-500">
+                            Admins
+                        </p>
+
+                        <p className="text-3xl font-bold mt-2">
+                            {totalAdmins}
+                        </p>
+
+                    </div>
+
+                </div>
+
+                {/* ERROR */}
+                {error && (
+                    <div className="mb-6 p-4 rounded-lg bg-red-100 text-red-700">
+
+                        <p className="font-semibold">
+                            Failed to Load Users
+                        </p>
+
+                        <p className="mt-1">
+                            {error}
+                        </p>
+
+                    </div>
+                )}
+
+                {/* MONGODB RESTAURANT INFORMATION */}
+                <div className="mb-6 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+
+                    <p className="font-semibold">
+                        🍽️ Restaurants available for assignment:{" "}
+                        {restaurants.length}
+                    </p>
+
+                    <p className="text-sm mt-1">
+                        These are restaurants stored in MongoDB.
+                        Your existing frontend restaurant list is
+                        not changed.
+                    </p>
+
+                </div>
+
+                {/* USERS TABLE */}
+                <div className="overflow-x-auto rounded-xl shadow">
+
+                    <table className="min-w-full bg-white dark:bg-gray-800">
+
+                        <thead>
+
+                            <tr className="border-b dark:border-gray-700">
+
+                                <th className="p-4 text-left">
+                                    #
+                                </th>
+
+                                <th className="p-4 text-left">
+                                    Name
+                                </th>
+
+                                <th className="p-4 text-left">
+                                    Email
+                                </th>
+
+                                <th className="p-4 text-left">
+                                    Phone
+                                </th>
+
+                                <th className="p-4 text-left">
+                                    Role
+                                </th>
+
+                                <th className="p-4 text-left">
+                                    Restaurant
+                                </th>
+
+                                <th className="p-4 text-left">
+                                    Action
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {users.length === 0 ? (
+
+                                <tr>
+
+                                    <td
+                                        colSpan="7"
+                                        className="p-8 text-center"
+                                    >
+                                        No users found.
+                                    </td>
+
+                                </tr>
+
+                            ) : (
+
+                                users.map(
+                                    (user, index) => (
+
+                                        <tr
+                                            key={user._id}
+                                            className="border-b dark:border-gray-700"
+                                        >
+
+                                            {/* NUMBER */}
+                                            <td className="p-4">
+                                                {index + 1}
+                                            </td>
+
+                                            {/* NAME */}
+                                            <td className="p-4 font-semibold">
+                                                {user.name}
+                                            </td>
+
+                                            {/* EMAIL */}
+                                            <td className="p-4">
+                                                {user.email}
+                                            </td>
+
+                                            {/* PHONE */}
+                                            <td className="p-4">
+                                                {user.phone ||
+                                                    "Not available"}
+                                            </td>
+
+                                            {/* ROLE */}
+                                            <td className="p-4">
+
+                                                <span
+                                                    className={
+                                                        user.role ===
+                                                            "admin"
+                                                            ? "font-semibold"
+                                                            : user.role ===
+                                                                "restaurantOwner"
+                                                                ? "font-semibold"
+                                                                : ""
+                                                    }
+                                                >
+                                                    {getRoleLabel(
+                                                        user.role
+                                                    )}
+                                                </span>
+
+                                            </td>
+
+                                            {/* RESTAURANT */}
+                                            <td className="p-4">
+
+                                                {user.role ===
+                                                    "admin" ? (
+
+                                                    <span>
+                                                        Platform Admin
+                                                    </span>
+
+                                                ) : user.role ===
+                                                    "restaurantOwner" ? (
+
+                                                    <div>
+
+                                                        <p className="font-semibold">
+                                                            {
+                                                                user
+                                                                    .restaurantId
+                                                                    ?.name ||
+                                                                "Not assigned"
+                                                            }
+                                                        </p>
+
+                                                        {user
+                                                            .restaurantId
+                                                            ?.cuisine && (
+
+                                                                <p className="text-sm text-gray-500">
+                                                                    {
+                                                                        user
+                                                                            .restaurantId
+                                                                            .cuisine
+                                                                    }
+                                                                </p>
+
+                                                            )}
+
+                                                    </div>
+
+                                                ) : (
+
+                                                    <select
+                                                        value={
+                                                            selectedRestaurants[
+                                                            user._id
+                                                            ] || ""
+                                                        }
+                                                        onChange={(e) =>
+                                                            handleRestaurantChange(
+                                                                user._id,
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        className="p-2 border rounded-lg dark:bg-gray-700"
+                                                    >
+
+                                                        <option value="">
+                                                            Select Restaurant
+                                                        </option>
+
+                                                        {restaurants.length ===
+                                                            0 ? (
+
+                                                            <option
+                                                                value=""
+                                                                disabled
+                                                            >
+                                                                No MongoDB restaurants
+                                                                available
+                                                            </option>
+
+                                                        ) : (
+
+                                                            restaurants.map(
+                                                                (
+                                                                    restaurant
+                                                                ) => (
+
+                                                                    <option
+                                                                        key={
+                                                                            restaurant._id
+                                                                        }
+                                                                        value={
+                                                                            restaurant._id
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            restaurant.name
+                                                                        }
+                                                                    </option>
+
+                                                                )
+                                                            )
+
+                                                        )}
+
+                                                    </select>
+
+                                                )}
+
+                                            </td>
+
+                                            {/* ACTION */}
+                                            <td className="p-4">
+
+                                                {user.role ===
+                                                    "admin" ? (
+
+                                                    <span>
+                                                        🔒 Protected
+                                                    </span>
+
+                                                ) : user.role ===
+                                                    "restaurantOwner" ? (
+
+                                                    <button
+                                                        onClick={() =>
+                                                            makeNormalUser(
+                                                                user
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            actionLoading ===
+                                                            user._id
+                                                        }
+                                                        className="px-4 py-2 rounded-lg border"
+                                                    >
+
+                                                        {actionLoading ===
+                                                            user._id
+                                                            ? "Updating..."
+                                                            : "Remove Business"}
+
+                                                    </button>
+
+                                                ) : (
+
+                                                    <button
+                                                        onClick={() =>
+                                                            makeRestaurantOwner(
+                                                                user
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            actionLoading ===
+                                                            user._id
+                                                        }
+                                                        className="px-4 py-2 rounded-lg bg-black text-white"
+                                                    >
+
+                                                        {actionLoading ===
+                                                            user._id
+                                                            ? "Updating..."
+                                                            : "Make Business"}
+
+                                                    </button>
+
+                                                )}
+
+                                            </td>
+
+                                        </tr>
+
+                                    )
+                                )
+
+                            )}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+    );
 }
 
 export default AdminUsers;

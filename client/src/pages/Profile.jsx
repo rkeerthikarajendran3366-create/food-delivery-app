@@ -1,201 +1,389 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
+import API from "../services/api";
 
 function Profile() {
-  // Get logged-in user
-  const loggedInUser = JSON.parse(localStorage.getItem("user"));
-
-  // Use email as unique account identifier
-  const userEmail = loggedInUser?.email || "guest";
-
-  // Account-specific profile key
-  const profileKey = `profile_${userEmail}`;
-
-  const [profile, setProfile] = useState(() => {
-    const savedProfile = localStorage.getItem(profileKey);
-
-    if (savedProfile) {
-      return JSON.parse(savedProfile);
+  const [user, setUser] = useState(() => {
+    try {
+      return JSON.parse(
+        localStorage.getItem("user")
+      );
+    } catch {
+      return null;
     }
-
-    return {
-      name: loggedInUser?.name || "",
-      email: loggedInUser?.email || "",
-      phone: loggedInUser?.phone || "",
-      address: ""
-    };
   });
 
-  const [isEditing, setIsEditing] = useState(false);
+  const [profile, setProfile] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+  });
 
-  const handleChange = (e) => {
+  const [business, setBusiness] = useState({
+    businessName: "",
+    ownerName: "",
+    email: "",
+    phone: "",
+    restaurantName: "",
+    cuisine: "",
+    address: "",
+    city: "",
+    description: "",
+    openingTime: "",
+    closingTime: "",
+  });
+
+  const [application, setApplication] =
+    useState(null);
+
+  useEffect(() => {
+    if (!user) return;
+
+    setProfile({
+      name: user.name || "",
+      email: user.email || "",
+      phone: user.phone || "",
+      address: user.address || "",
+    });
+
+    setBusiness((prev) => ({
+      ...prev,
+      ownerName: user.name || "",
+      email: user.email || "",
+      phone: user.phone || "",
+    }));
+
+    loadApplication();
+  }, []);
+
+  const loadApplication = async () => {
+    const token =
+      localStorage.getItem("token");
+
+    if (!token) return;
+
+    try {
+      const response = await API.get(
+        "/business-applications/my",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setApplication(
+        response.data.application
+      );
+    } catch (error) {
+      console.error(
+        "Application load error:",
+        error
+      );
+    }
+  };
+
+  const handleProfileChange = (e) => {
     setProfile({
       ...profile,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
-  const handleSave = () => {
-    // Validation
-    if (!profile.name.trim()) {
-      alert("Please enter your name.");
-      return;
-    }
-
-    if (!profile.phone.trim()) {
-      alert("Please enter your phone number.");
-      return;
-    }
-
-    if (!/^[0-9]{10}$/.test(profile.phone)) {
-      alert("Please enter a valid 10-digit phone number.");
-      return;
-    }
-
-    if (!profile.address.trim()) {
-      alert("Please enter your delivery address.");
-      return;
-    }
-
-    // Save account-specific profile
-    localStorage.setItem(profileKey, JSON.stringify(profile));
-
-    setIsEditing(false);
-
-    alert("Profile saved successfully! ✅");
+  const handleBusinessChange = (e) => {
+    setBusiness({
+      ...business,
+      [e.target.name]: e.target.value,
+    });
   };
 
-  return (
-    <div className="max-w-xl mx-auto p-6 mt-10">
-      <div
-        className="
-          bg-white
-          dark:bg-gray-800
-          shadow-lg
-          rounded-xl
-          p-6
-        "
-      >
-        <h1
-          className="
-            text-3xl
-            font-bold
-            text-center
-            text-gray-900
-            dark:text-white
-          "
+  const updateProfile = async (e) => {
+    e.preventDefault();
+
+    const token =
+      localStorage.getItem("token");
+
+    try {
+      const response = await API.put(
+        "/auth/profile",
+        profile,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const updatedUser =
+        response.data.user;
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify(updatedUser)
+      );
+
+      setUser(updatedUser);
+
+      window.dispatchEvent(
+        new Event("userChanged")
+      );
+
+      toast.success(
+        "Profile updated successfully"
+      );
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to update profile"
+      );
+    }
+  };
+
+  const submitBusiness = async (e) => {
+    e.preventDefault();
+
+    const token =
+      localStorage.getItem("token");
+
+    if (!token) {
+      toast.error("Please login first");
+      return;
+    }
+
+    try {
+      const response = await API.post(
+        "/auth/register-business",
+        business,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      toast.success(
+        response.data.message
+      );
+
+      await loadApplication();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ||
+          "Business registration failed"
+      );
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Link
+          to="/login"
+          className="bg-orange-500 text-white px-6 py-3 rounded-lg"
         >
+          Login to view Profile
+        </Link>
+      </div>
+    );
+  }
+
+  const isOwner =
+    user.role === "restaurantOwner";
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+      <div className="max-w-5xl mx-auto">
+
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-8">
           👤 My Profile
         </h1>
 
-        <div className="mt-6 space-y-4">
+        {/* PROFILE FORM */}
 
-          {/* Name */}
-          <input
-            type="text"
-            name="name"
-            placeholder="Your Name"
-            value={profile.name}
-            disabled={!isEditing}
-            onChange={handleChange}
-            className="
-              w-full
-              border
-              rounded-lg
-              p-3
-              dark:bg-gray-700
-              dark:text-white
-            "
-          />
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-5">
+            Personal Profile
+          </h2>
 
-          {/* Email */}
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={profile.email}
-            disabled
-            className="
-              w-full
-              border
-              rounded-lg
-              p-3
-              bg-gray-100
-              dark:bg-gray-600
-              dark:text-white
-            "
-          />
+          <form
+            onSubmit={updateProfile}
+            className="grid md:grid-cols-2 gap-4"
+          >
+            <input
+              name="name"
+              value={profile.name}
+              onChange={handleProfileChange}
+              placeholder="Name"
+              className="input"
+              required
+            />
 
-          {/* Phone */}
-          <input
-            type="tel"
-            name="phone"
-            placeholder="Phone Number"
-            value={profile.phone}
-            disabled={!isEditing}
-            onChange={handleChange}
-            maxLength="10"
-            className="
-              w-full
-              border
-              rounded-lg
-              p-3
-              dark:bg-gray-700
-              dark:text-white
-            "
-          />
+            <input
+              name="email"
+              value={profile.email}
+              disabled
+              className="input bg-gray-100"
+            />
 
-          {/* Address */}
-          <textarea
-            name="address"
-            placeholder="Delivery Address"
-            value={profile.address}
-            disabled={!isEditing}
-            onChange={handleChange}
-            rows="4"
-            className="
-              w-full
-              border
-              rounded-lg
-              p-3
-              dark:bg-gray-700
-              dark:text-white
-            "
-          />
+            <input
+              name="phone"
+              value={profile.phone}
+              onChange={handleProfileChange}
+              placeholder="Phone"
+              className="input"
+            />
+
+            <input
+              name="address"
+              value={profile.address}
+              onChange={handleProfileChange}
+              placeholder="Address"
+              className="input"
+            />
+
+            <button
+              type="submit"
+              className="md:col-span-2 bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-semibold"
+            >
+              Save Profile
+            </button>
+          </form>
         </div>
 
-        <div className="flex justify-center gap-4 mt-6">
+        {/* OWNER DASHBOARD */}
 
-          {!isEditing ? (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="
-                bg-orange-500
-                hover:bg-orange-600
-                text-white
-                px-6
-                py-2
-                rounded-lg
-              "
+        {isOwner && (
+          <div className="bg-green-50 dark:bg-green-900 rounded-xl p-6 mb-8">
+            <h2 className="text-2xl font-bold text-green-800 dark:text-green-100">
+              🏪 Restaurant Owner
+            </h2>
+
+            <p className="mt-2 text-green-700 dark:text-green-200">
+              Your business application has been approved.
+            </p>
+
+            <Link
+              to="/restaurant-owner"
+              className="inline-block mt-4 bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg"
             >
-              ✏️ Edit Profile
-            </button>
-          ) : (
-            <button
-              onClick={handleSave}
-              className="
-                bg-green-600
-                hover:bg-green-700
-                text-white
-                px-6
-                py-2
-                rounded-lg
-              "
-            >
-              💾 Save Profile
-            </button>
+              Manage My Restaurant & Orders
+            </Link>
+          </div>
+        )}
+
+        {/* BUSINESS FORM */}
+
+        {!isOwner &&
+          user.role === "user" && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                🏪 Register Your Business
+              </h2>
+
+              <p className="text-gray-600 dark:text-gray-300 mb-5">
+                Submit your restaurant for admin approval.
+              </p>
+
+              {application && (
+                <div className="mb-5 p-4 rounded-lg bg-gray-100 dark:bg-gray-700">
+                  <strong>
+                    Application Status:
+                  </strong>{" "}
+                  <span
+                    className={
+                      application.status ===
+                      "approved"
+                        ? "text-green-600"
+                        : application.status ===
+                          "rejected"
+                        ? "text-red-600"
+                        : "text-orange-600"
+                    }
+                  >
+                    {application.status}
+                  </span>
+
+                  {application.rejectionReason && (
+                    <p className="mt-2 text-red-600">
+                      Reason:{" "}
+                      {
+                        application.rejectionReason
+                      }
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <form
+                onSubmit={submitBusiness}
+                className="grid md:grid-cols-2 gap-4"
+              >
+                {[
+                  ["businessName", "Business Name"],
+                  ["ownerName", "Owner Name"],
+                  ["email", "Email"],
+                  ["phone", "Phone"],
+                  ["restaurantName", "Restaurant Name"],
+                  ["cuisine", "Cuisine"],
+                  ["address", "Address"],
+                  ["city", "City"],
+                  ["openingTime", "Opening Time"],
+                  ["closingTime", "Closing Time"],
+                ].map(
+                  ([name, placeholder]) => (
+                    <input
+                      key={name}
+                      name={name}
+                      value={business[name]}
+                      onChange={
+                        handleBusinessChange
+                      }
+                      placeholder={placeholder}
+                      className="input"
+                      required={[
+                        "businessName",
+                        "ownerName",
+                        "email",
+                        "phone",
+                        "restaurantName",
+                        "cuisine",
+                        "address",
+                        "city",
+                      ].includes(name)}
+                    />
+                  )
+                )}
+
+                <textarea
+                  name="description"
+                  value={
+                    business.description
+                  }
+                  onChange={
+                    handleBusinessChange
+                  }
+                  placeholder="Restaurant Description"
+                  className="input md:col-span-2 min-h-28"
+                />
+
+                <button
+                  type="submit"
+                  disabled={
+                    application?.status ===
+                    "pending"
+                  }
+                  className="md:col-span-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white py-3 rounded-lg font-semibold"
+                >
+                  {application?.status ===
+                  "pending"
+                    ? "Application Pending"
+                    : "Submit Business Registration"}
+                </button>
+              </form>
+            </div>
           )}
-
-        </div>
       </div>
     </div>
   );

@@ -1,344 +1,186 @@
-import { useState } from "react";
-import RestaurantCard from "../components/RestaurantCard";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+
 import restaurants from "../data/restaurants";
 
+const BACKEND_URL =
+  "https://foodexpress-backend-p9dv.onrender.com";
 
 function Restaurants() {
-
-
-  const [search, setSearch] = useState("");
-
-  const [selectedCuisine, setSelectedCuisine] = useState("All");
-
-  const [sortOption, setSortOption] = useState("Default");
-
-
-
-
-
-  let filteredRestaurants = restaurants.filter((restaurant) => {
-
-
-    const matchesSearch = restaurant.name
-      .toLowerCase()
-      .includes(search.toLowerCase());
-
-
-
-    const matchesCuisine =
-      selectedCuisine === "All" ||
-      restaurant.cuisine === selectedCuisine;
-
-
-
-    return matchesSearch && matchesCuisine;
-
-
-  });
-
-
-
-
-
-  if (sortOption === "Rating") {
-
-    filteredRestaurants.sort(
-      (a, b) => b.rating - a.rating
-    );
-
-  }
-
-
-
-  if (sortOption === "Cost") {
-
-    filteredRestaurants.sort(
-      (a, b) => a.costForTwo - b.costForTwo
-    );
-
-  }
-
-
-
-  if (sortOption === "Delivery") {
-
-    filteredRestaurants.sort(
-      (a, b) =>
-        parseInt(a.deliveryTime) -
-        parseInt(b.deliveryTime)
-    );
-
-  }
-
-
-
-
-
-
-  return (
-
-    <div
-      className="
-    min-h-screen
-    bg-gradient-to-br
-    from-orange-50
-    via-yellow-50
-    to-red-50
-    dark:from-gray-900
-    dark:via-gray-800
-    dark:to-red-950
-    p-6
-  "
-    >
-
-
-
-
-
-      <h1
-        className="
-          text-4xl
-          font-bold
-          mb-6
-          text-gray-900
-          dark:text-white
-        "
-      >
-
-        Restaurants
-
-      </h1>
-
-
-
-
-
-
-
-      {/* Search */}
-
-      <input
-
-        type="text"
-
-        placeholder="Search restaurants..."
-
-        value={search}
-
-        onChange={(e) => setSearch(e.target.value)}
-
-        className="
-          w-full
-          border
-          border-gray-300
-          dark:border-gray-700
-          bg-white
-          dark:bg-gray-800
-          text-gray-900
-          dark:text-white
-          rounded-lg
-          p-3
-          mb-6
-          outline-none
-        "
-
-      />
-
-
-
-
-
-
-
-
-      {/* Sort */}
-
-      <div className="mb-6">
-
-
-        <label
-          className="
-            font-bold
-            mr-3
-            text-gray-900
-            dark:text-white
-          "
-        >
-
-          Sort By:
-
-        </label>
-
-
-
-
-        <select
-
-          value={sortOption}
-
-          onChange={(e) => setSortOption(e.target.value)}
-
-          className="
-            border
-            border-gray-300
-            dark:border-gray-700
-            bg-white
-            dark:bg-gray-800
-            text-gray-900
-            dark:text-white
-            p-2
-            rounded-lg
-          "
-
-        >
-
-          <option value="Default">
-            Default
-          </option>
-
-
-          <option value="Rating">
-            Highest Rating ⭐
-          </option>
-
-
-          <option value="Cost">
-            Lowest Price 💰
-          </option>
-
-
-          <option value="Delivery">
-            Fastest Delivery ⚡
-          </option>
-
-
-        </select>
-
-
-      </div>
-
-
-
-
-
-
-
-
-
-      {/* Cuisine Filter */}
-
-      <div className="flex flex-wrap gap-3 mb-8">
-
-
-        {[
-          "All",
-          "Italian",
-          "American",
-          "Indian",
-          "Chinese"
-        ].map((cuisine) => (
-
-
-          <button
-
-            key={cuisine}
-
-            onClick={() => setSelectedCuisine(cuisine)}
-
-            className={`
-              px-4
-              py-2
-              rounded-lg
-              transition
-
-              ${selectedCuisine === cuisine
-
-                ? "bg-orange-500 text-white"
-
-                : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white"
-              }
-            `}
-
-          >
-
-            {cuisine}
-
-          </button>
-
-
-        ))}
-
-
-      </div>
-
-
-
-
-
-
-
-
-
-      {/* Restaurant Cards */}
-
-      <div className="grid md:grid-cols-3 gap-6">
-
-
-        {filteredRestaurants.length > 0 ? (
-
-
-          filteredRestaurants.map((restaurant) => (
-
-
-            <RestaurantCard
-
-              key={restaurant.id}
-              id={restaurant.id}
-              name={restaurant.name}
-              cuisine={restaurant.cuisine}
-              rating={restaurant.rating}
-              deliveryTime={restaurant.deliveryTime}
-              costForTwo={restaurant.costForTwo}
-              image={restaurant.image}
-              menu={restaurant.menu}
-            />
-
-
-          ))
-
-
-        ) : (
-
-
-          <div
-            className="
-              col-span-3
-              text-center
-              text-xl
-              text-gray-500
-              dark:text-gray-300
-            "
-          >
-
-            No restaurants found 😔
-
-          </div>
-
-
-        )}
-
-
-
-      </div>
-
-
-
-
-    </div>
-
+  const [ownerRestaurants, setOwnerRestaurants] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadOwnerRestaurants = async () => {
+      try {
+        const response = await fetch(
+          `${BACKEND_URL}/api/restaurants`
+        );
+
+        const data = await response.json();
+
+        console.log("Backend Restaurants:", data);
+
+        if (response.ok) {
+          // Your backend currently returns an array directly
+          if (Array.isArray(data)) {
+            setOwnerRestaurants(data);
+          }
+
+          // Also support { success: true, restaurants: [] }
+          else if (
+            data.success &&
+            Array.isArray(data.restaurants)
+          ) {
+            setOwnerRestaurants(data.restaurants);
+          }
+        }
+      } catch (error) {
+        console.error(
+          "Failed to load backend restaurants:",
+          error
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadOwnerRestaurants();
+  }, []);
+
+  const backendRestaurants = ownerRestaurants.map(
+    (restaurant) => ({
+      ...restaurant,
+
+      // MongoDB ObjectId
+      id: restaurant._id,
+
+      isBackendRestaurant: true,
+
+      location:
+        restaurant.address ||
+        restaurant.city ||
+        "Available",
+
+      costForTwo:
+        restaurant.costForTwo ||
+        "Available",
+
+      menu: restaurant.menu || [],
+    })
   );
 
-}
+  // IMPORTANT:
+  // Existing 21 restaurants are kept.
+  // Owner-created MongoDB restaurants are added after them.
+  const allRestaurants = [
+    ...restaurants,
+    ...backendRestaurants,
+  ];
 
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+      <div className="max-w-7xl mx-auto">
+
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+          🍔 Restaurants
+        </h1>
+
+        <p className="text-gray-600 dark:text-gray-300 mb-8">
+          Explore restaurants and delicious food.
+        </p>
+
+        {loading && (
+          <div className="text-center py-10">
+            <p className="text-gray-600 dark:text-gray-300">
+              Loading restaurants...
+            </p>
+          </div>
+        )}
+
+        {!loading && allRestaurants.length === 0 && (
+          <div className="text-center py-10">
+            <p className="text-gray-600 dark:text-gray-300">
+              No restaurants available.
+            </p>
+          </div>
+        )}
+
+        {!loading && allRestaurants.length > 0 && (
+          <div
+            className="
+              grid
+              grid-cols-1
+              md:grid-cols-2
+              lg:grid-cols-3
+              gap-6
+            "
+          >
+            {allRestaurants.map((restaurant) => (
+              <div
+                key={restaurant.id}
+                className="
+                  bg-white
+                  dark:bg-gray-800
+                  rounded-xl
+                  shadow-lg
+                  overflow-hidden
+                  hover:shadow-2xl
+                  transition
+                "
+              >
+                <img
+                  src={restaurant.image}
+                  alt={restaurant.name}
+                  className="w-full h-56 object-cover"
+                />
+
+                <div className="p-5">
+
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    {restaurant.name}
+                  </h2>
+
+                  <p className="mt-2 text-gray-600 dark:text-gray-300">
+                    🍽️ {restaurant.cuisine}
+                  </p>
+
+                  <p className="mt-2 text-gray-600 dark:text-gray-300">
+                    ⭐ {restaurant.rating || 4.5}
+                  </p>
+
+                  <p className="mt-2 text-gray-600 dark:text-gray-300">
+                    🕒{" "}
+                    {restaurant.deliveryTime ||
+                      "30-40 mins"}
+                  </p>
+
+                  <Link
+                    to={`/restaurant/${restaurant.id}`}
+                    className="
+                      block
+                      mt-5
+                      text-center
+                      bg-orange-500
+                      hover:bg-orange-600
+                      text-white
+                      py-2
+                      rounded-lg
+                      font-semibold
+                    "
+                  >
+                    View Details
+                  </Link>
+
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
 
 export default Restaurants;

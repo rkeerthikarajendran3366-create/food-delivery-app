@@ -57,8 +57,8 @@ function Login() {
         console.log("Admin detected → Redirecting to /admin");
         navigate("/admin", { replace: true });
       } else {
-        console.log("Customer detected → Redirecting to /profile");
-        navigate("/profile", { replace: true });
+        console.log("Customer detected → Redirecting to /restaurants");
+        navigate("/restaurants", { replace: true });
       }
     } catch (error) {
       console.log("Login Error:", error);

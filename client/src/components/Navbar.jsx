@@ -161,12 +161,12 @@ function Navbar() {
           )}
 
           {/* ================================
-              LOGIN / PROFILE / LOGOUT
+              PROFILE / LOGIN / LOGOUT
           ================================= */}
 
           {isLoggedIn ? (
             <>
-              {/* Customer Profile */}
+              {/* Profile */}
 
               {!isAdmin && (
                 <Link to="/profile">

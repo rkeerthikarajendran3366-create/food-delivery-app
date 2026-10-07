@@ -18,8 +18,7 @@ import OrderSuccess from "./pages/OrderSuccess";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Profile from "./pages/Profile";
-
+import BusinessRegistration from "./pages/BusinessRegistration";
 import Wishlist from "./pages/Wishlist";
 import OrderHistory from "./pages/OrderHistory";
 
@@ -27,6 +26,9 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
 import AdminRestaurants from "./pages/AdminRestaurants";
 import AdminOrders from "./pages/AdminOrders";
+import Profile from "./pages/Profile";
+import RestaurantOwnerDashboard from "./pages/RestaurantOwnerDashboard";
+import AdminBusinessApplications from "./pages/AdminBusinessApplications";
 
 import NotFound from "./pages/NotFound";
 
@@ -63,6 +65,10 @@ function App() {
           element={<Register />}
         />
 
+        <Route
+          path="/register-business"
+          element={<BusinessRegistration />}
+        />
 
         {/* =========================
             CUSTOMER ROUTES
@@ -109,14 +115,6 @@ function App() {
             PROTECTED CUSTOMER ROUTES
         ========================== */}
 
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
         <Route
           path="/wishlist"
           element={
@@ -176,6 +174,32 @@ function App() {
           element={
             <AdminRoute>
               <AdminOrders />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/restaurant-owner"
+          element={
+            <ProtectedRoute>
+              <RestaurantOwnerDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/business-applications"
+          element={
+            <AdminRoute>
+              <AdminBusinessApplications />
             </AdminRoute>
           }
         />
