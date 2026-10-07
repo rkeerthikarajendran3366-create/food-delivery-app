@@ -6,6 +6,9 @@ const {
   getRestaurants,
   getRestaurantById,
   createRestaurant,
+  getOwnerRestaurant,
+  updateOwnerRestaurant,
+  getRestaurantStats,
 } = require("../controllers/restaurantController");
 
 const {
@@ -15,26 +18,36 @@ const {
 
 const router = express.Router();
 
-// =====================================================
-// GET ALL RESTAURANTS
 // Public
-// =====================================================
-
 router.get("/", getRestaurants);
 
-// =====================================================
-// GET RESTAURANT BY ID
-// Public
-// User + Admin can view details
-// =====================================================
+// Admin statistics
+router.get(
+  "/stats",
+  authenticate,
+  authorize("admin"),
+  getRestaurantStats
+);
 
+// Restaurant Owner
+router.get(
+  "/owner/my-restaurant",
+  authenticate,
+  authorize("restaurantOwner"),
+  getOwnerRestaurant
+);
+
+router.put(
+  "/owner/my-restaurant",
+  authenticate,
+  authorize("restaurantOwner"),
+  updateOwnerRestaurant
+);
+
+// Public single restaurant
 router.get("/:id", getRestaurantById);
 
-// =====================================================
-// CREATE RESTAURANT
-// Admin Only
-// =====================================================
-
+// Admin create restaurant
 router.post(
   "/",
   authenticate,

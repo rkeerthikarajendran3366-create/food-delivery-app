@@ -7,6 +7,16 @@ const orderItemSchema = new mongoose.Schema(
       required: true,
     },
 
+    restaurantId: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+
+    restaurantName: {
+      type: String,
+      default: "",
+    },
+
     name: {
       type: String,
       required: true,
@@ -107,12 +117,7 @@ const orderSchema = new mongoose.Schema(
 
     paymentStatus: {
       type: String,
-      enum: [
-        "Pending",
-        "Paid",
-        "COD",
-        "Failed",
-      ],
+      enum: ["Pending", "Paid", "COD", "Failed"],
       default: "Pending",
     },
 
@@ -131,7 +136,4 @@ const orderSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model(
-  "Order",
-  orderSchema
-);
+module.exports = mongoose.model("Order", orderSchema);

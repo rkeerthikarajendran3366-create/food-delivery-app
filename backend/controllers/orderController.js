@@ -2,7 +2,6 @@ const Order = require("../models/Order");
 
 // =====================================================
 // CREATE NEW ORDER
-// Logged-in users only
 // =====================================================
 
 const createOrder = async (req, res) => {
@@ -18,11 +17,9 @@ const createOrder = async (req, res) => {
       razorpayOrderId,
     } = req.body;
 
-    // User comes from authenticated JWT
     const userId = req.user._id;
     const userEmail = req.user.email;
 
-    // Basic validation
     if (
       !customer ||
       !items ||
@@ -35,7 +32,6 @@ const createOrder = async (req, res) => {
       });
     }
 
-    // Create order using authenticated user's identity
     const order = await Order.create({
       userId,
       userEmail,
@@ -72,7 +68,6 @@ const createOrder = async (req, res) => {
 
 // =====================================================
 // GET USER'S OWN ORDERS
-// Logged-in users only
 // =====================================================
 
 const getUserOrders = async (req, res) => {
@@ -80,7 +75,6 @@ const getUserOrders = async (req, res) => {
     const requestedUserId = req.params.userId;
     const loggedInUserId = req.user._id.toString();
 
-    // Users can only access their own orders
     if (
       req.user.role !== "admin" &&
       requestedUserId !== loggedInUserId
@@ -111,8 +105,7 @@ const getUserOrders = async (req, res) => {
 };
 
 // =====================================================
-// GET ALL ORDERS
-// Admin only
+// GET ALL ORDERS - ADMIN
 // =====================================================
 
 const getAllOrders = async (req, res) => {
@@ -137,8 +130,53 @@ const getAllOrders = async (req, res) => {
 };
 
 // =====================================================
+// GET RESTAURANT OWNER ORDERS
+// =====================================================
+
+const getOwnerOrders = async (req, res) => {
+  try {
+    if (req.user.role !== "restaurantOwner") {
+      return res.status(403).json({
+        success: false,
+        message: "Restaurant owner access required",
+      });
+    }
+
+    if (!req.user.restaurantId) {
+      return res.status(404).json({
+        success: false,
+        message: "No restaurant assigned to this owner",
+      });
+    }
+
+    const ownerRestaurantId = String(req.user.restaurantId);
+
+    const orders = await Order.find({
+      "items.restaurantId": ownerRestaurantId,
+    })
+      .populate("userId", "name email phone")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      orders,
+      restaurantId: ownerRestaurantId,
+      totalOrders: orders.length,
+    });
+  } catch (error) {
+    console.error("Get Owner Orders Error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch restaurant orders",
+      error: error.message,
+    });
+  }
+};
+
+// =====================================================
 // UPDATE ORDER STATUS
-// Admin only
+// ADMIN + RESTAURANT OWNER
 // =====================================================
 
 const updateOrderStatus = async (req, res) => {
@@ -161,14 +199,7 @@ const updateOrderStatus = async (req, res) => {
       });
     }
 
-    const order = await Order.findByIdAndUpdate(
-      id,
-      { status },
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
+    const order = await Order.findById(id);
 
     if (!order) {
       return res.status(404).json({
@@ -176,6 +207,33 @@ const updateOrderStatus = async (req, res) => {
         message: "Order not found",
       });
     }
+
+    // Owner can update ONLY their restaurant's orders
+    if (req.user.role === "restaurantOwner") {
+      if (!req.user.restaurantId) {
+        return res.status(403).json({
+          success: false,
+          message: "No restaurant assigned",
+        });
+      }
+
+      const ownerRestaurantId = String(req.user.restaurantId);
+
+      const ownsOrder = order.items.some(
+        (item) =>
+          String(item.restaurantId) === ownerRestaurantId
+      );
+
+      if (!ownsOrder) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only manage your restaurant orders",
+        });
+      }
+    }
+
+    order.status = status;
+    await order.save();
 
     res.status(200).json({
       success: true,
@@ -193,9 +251,14 @@ const updateOrderStatus = async (req, res) => {
   }
 };
 
+// =====================================================
+// EXPORT CONTROLLERS
+// =====================================================
+
 module.exports = {
   createOrder,
   getUserOrders,
   getAllOrders,
+  getOwnerOrders,
   updateOrderStatus,
 };

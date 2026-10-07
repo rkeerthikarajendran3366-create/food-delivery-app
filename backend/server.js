@@ -6,6 +6,10 @@ dotenv.config();
 
 const connectDB = require("./config/db");
 
+// =====================================================
+// ROUTES
+// =====================================================
+
 const authRoutes = require("./routes/authRoutes");
 
 console.log("✅ Loading restaurant routes...");
@@ -15,6 +19,10 @@ console.log("✅ Restaurant routes loaded successfully");
 const paymentRoutes = require("./routes/paymentRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const businessApplicationRoutes = require("./routes/businessApplicationRoutes");
+
+// =====================================================
+// CREATE EXPRESS APP
+// =====================================================
 
 const app = express();
 

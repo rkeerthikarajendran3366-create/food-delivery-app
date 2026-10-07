@@ -4,6 +4,7 @@ const {
   createOrder,
   getUserOrders,
   getAllOrders,
+  getOwnerOrders,
   updateOrderStatus,
 } = require("../controllers/orderController");
 
@@ -15,15 +16,18 @@ const {
 const router = express.Router();
 
 // =====================================================
-// CREATE ORDER — logged-in users
+// CREATE NEW ORDER
 // =====================================================
 
-router.post("/", authenticate, createOrder);
+router.post(
+  "/",
+  authenticate,
+  createOrder
+);
 
 // =====================================================
-// GET ALL ORDERS — admin only
-// NOTE: must be defined BEFORE "/:userId",
-// otherwise Express matches "admin" as a userId.
+// GET ALL ORDERS - ADMIN
+// IMPORTANT: /admin BEFORE /:userId
 // =====================================================
 
 router.get(
@@ -34,20 +38,40 @@ router.get(
 );
 
 // =====================================================
-// UPDATE ORDER STATUS — admin only
+// GET RESTAURANT OWNER ORDERS
+// =====================================================
+
+router.get(
+  "/owner",
+  authenticate,
+  authorize("restaurantOwner"),
+  getOwnerOrders
+);
+
+// =====================================================
+// UPDATE ORDER STATUS
+// ADMIN + RESTAURANT OWNER
 // =====================================================
 
 router.put(
   "/:id/status",
   authenticate,
-  authorize("admin"),
+  authorize("admin", "restaurantOwner"),
   updateOrderStatus
 );
 
 // =====================================================
-// GET ORDERS FOR A SPECIFIC USER — logged-in users
+// GET USER'S OWN ORDERS
 // =====================================================
 
-router.get("/:userId", authenticate, getUserOrders);
+router.get(
+  "/:userId",
+  authenticate,
+  getUserOrders
+);
+
+// =====================================================
+// EXPORT ROUTER
+// =====================================================
 
 module.exports = router;
